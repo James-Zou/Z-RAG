@@ -1,4 +1,5 @@
-# Z-RAG - 基于LangChain4j的检索增强生成系统
+# Z-RAG - 一款轻量高效，链路透明的检索增强生成（RAG）系统
+![Uploading image.png…]()
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/Java-8-orange.svg)](https://www.oracle.com/java/)
@@ -7,9 +8,8 @@
 
 ## 项目简介
 
-It is a lightweight and high-performance Retrieval-Augmented Generation (RAG) system specifically designed for professional developers. 
-Built on the Java ecosystem, it provides a complete solution for document processing, vector retrieval, and intelligent question answering, 
-making it particularly suitable for enterprise-level applications and customized development needs.
+这是一款专为专业开发人员设计的轻量级、高性能检索增强生成（RAG）系统。基于Java生态构建，提供完整的文档处理、向量检索和智能问答解决方案，
+特别适合企业级应用和定制化开发需求。
 
 - 📖 **产品说明文档**: 查看 [docs/PRODUCT-OVERVIEW.md](docs/PRODUCT-OVERVIEW.md) 了解详细的产品介绍和竞品对比
 - 📊 **功能特性详解**: 查看 [docs/FEATURES.md](docs/FEATURES.md) 了解完整的功能特性
@@ -418,7 +418,6 @@ curl -X DELETE "http://localhost:8080/api/rag/storage/file?fileName=documents/fi
 - **内存存储** - 开发测试使用
 
 #### Milvus最佳实践
-参考[CSDN文章：手把手教你用Java实现RAG向量库Milvus的增删改查](https://blog.csdn.net/qq_38196449/article/details/148061140)，我们实现了以下最佳实践：
 
 1. **工具类封装**：创建了`MilvusLLMUtils`工具类，封装所有Milvus操作
 2. **原生客户端**：使用Milvus官方Java客户端进行高效通信
