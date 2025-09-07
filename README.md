@@ -1,5 +1,5 @@
 # Z-RAG - 一款轻量高效，链路透明的检索增强生成（RAG）系统
-![Uploading image.png…]()
+
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java](https://img.shields.io/badge/Java-8-orange.svg)](https://www.oracle.com/java/)
