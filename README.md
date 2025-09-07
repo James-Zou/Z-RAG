@@ -7,15 +7,17 @@
 
 ## 项目简介
 
-Z-RAG是一个基于LangChain4j框架构建的完整RAG（检索增强生成）系统，提供了文档处理、向量检索和智能问答等核心功能。
+It is a lightweight and high-performance Retrieval-Augmented Generation (RAG) system specifically designed for professional developers. 
+Built on the Java ecosystem, it provides a complete solution for document processing, vector retrieval, and intelligent question answering, 
+making it particularly suitable for enterprise-level applications and customized development needs.
 
-> 📖 **产品说明文档**: 查看 [docs/PRODUCT-OVERVIEW.md](docs/PRODUCT-OVERVIEW.md) 了解详细的产品介绍和竞品对比
-> 📊 **功能特性详解**: 查看 [docs/FEATURES.md](docs/FEATURES.md) 了解完整的功能特性
-> 🆚 **竞品对比分析**: 查看 [docs/COMPARISON.md](docs/COMPARISON.md) 了解与Dify、RAGFlow的详细对比
-> 🚀 **快速开始指南**: 查看 [docs/QUICK-START-GUIDE.md](docs/QUICK-START-GUIDE.md) 5分钟快速体验
-> 📋 **产品总结**: 查看 [docs/PRODUCT-SUMMARY.md](docs/PRODUCT-SUMMARY.md) 了解产品核心优势和技术特性
-> 📚 **文档索引**: 查看 [docs/DOCS-INDEX.md](docs/DOCS-INDEX.md) 了解完整文档体系
-> 📁 **目录结构**: 查看 [docs/DIRECTORY-STRUCTURE.md](docs/DIRECTORY-STRUCTURE.md) 了解项目目录组织
+- 📖 **产品说明文档**: 查看 [docs/PRODUCT-OVERVIEW.md](docs/PRODUCT-OVERVIEW.md) 了解详细的产品介绍和竞品对比
+- 📊 **功能特性详解**: 查看 [docs/FEATURES.md](docs/FEATURES.md) 了解完整的功能特性
+- 🆚 **竞品对比分析**: 查看 [docs/COMPARISON.md](docs/COMPARISON.md) 了解与Dify、RAGFlow的详细对比
+- 🚀 **快速开始指南**: 查看 [docs/QUICK-START-GUIDE.md](docs/QUICK-START-GUIDE.md) 5分钟快速体验
+- 📋 **产品总结**: 查看 [docs/PRODUCT-SUMMARY.md](docs/PRODUCT-SUMMARY.md) 了解产品核心优势和技术特性
+- 📚 **文档索引**: 查看 [docs/DOCS-INDEX.md](docs/DOCS-INDEX.md) 了解完整文档体系
+- 📁 **目录结构**: 查看 [docs/DIRECTORY-STRUCTURE.md](docs/DIRECTORY-STRUCTURE.md) 了解项目目录组织
 
 ## 作者信息
 
