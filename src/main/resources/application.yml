@@ -1,0 +1,123 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: z-rag
+
+# 模型配置
+models:
+  # OpenAI配置（需要翻墙）
+  openai:
+    api:
+      key: ${OPENAI_API_KEY:}
+    base:
+      url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_MODEL:gpt-3.5-turbo}
+    embedding:
+      model: ${OPENAI_EMBEDDING_MODEL:text-embedding-ada-002}
+  
+  # 千问模型配置（国内可用）
+  qwen:
+    api:
+      key: ${QWEN_API_KEY:}  # 从阿里云控制台获取
+    base:
+      url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
+    model: ${QWEN_MODEL:qwen-turbo}
+    embedding:
+      model: ${QWEN_EMBEDDING_MODEL:text-embedding-v1}
+  
+  # Ollama本地模型配置
+  ollama:
+    base:
+      url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:qwen2.5:7b}
+    embedding:
+      model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+
+# 重排模型配置
+rerank:
+  # 千问重排模型
+  qwen:
+    api:
+      key: ${QWEN_API_KEY:}
+    base:
+      url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
+    model: ${QWEN_RERANK_MODEL:qwen-reranker}
+  
+  # OpenAI重排模型
+  openai:
+    api:
+      key: ${OPENAI_API_KEY:}
+    base:
+      url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${OPENAI_RERANK_MODEL:text-embedding-3-large}
+  
+  # Ollama重排模型
+  ollama:
+    base:
+      url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_RERANK_MODEL:qwen2.5:7b}
+
+# MinIO对象存储配置
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET_NAME:zrag-documents}
+  auto-create-bucket: true
+
+# Weaviate向量数据库配置
+weaviate:
+  host: ${WEAVIATE_HOST:localhost}
+  port: ${WEAVIATE_PORT:8080}
+  scheme: ${WEAVIATE_SCHEME:http}
+  class-name: ${WEAVIATE_CLASS_NAME:ZRAGDocument}
+  vector-dimension: ${WEAVIATE_VECTOR_DIMENSION:384}  # AllMiniLmL6V2的向量维度
+  # 认证配置（选择其中一种）
+  api-key: ${WEAVIATE_API_KEY:}
+  username: ${WEAVIATE_USERNAME:}
+  password: ${WEAVIATE_PASSWORD:}
+  access-token: ${WEAVIATE_ACCESS_TOKEN:}
+
+# Milvus向量数据库配置
+milvus:
+  host: ${MILVUS_HOST:localhost}
+  port: ${MILVUS_PORT:19530}
+  database: ${MILVUS_DATABASE:zrag}
+  collection: ${MILVUS_COLLECTION:documents}
+  # 连接配置
+  connect-timeout: ${MILVUS_CONNECT_TIMEOUT:10000}
+  idle-timeout: ${MILVUS_IDLE_TIMEOUT:60000}
+  # 向量配置
+  vector-dimension: ${MILVUS_VECTOR_DIMENSION:384}  # AllMiniLmL6V2的向量维度
+  index-type: ${MILVUS_INDEX_TYPE:IVF_FLAT}
+  metric-type: ${MILVUS_METRIC_TYPE:COSINE}
+
+# 向量存储配置
+vector-store:
+  type: ${VECTOR_STORE_TYPE:milvus}  # 可选: milvus, weaviate, memory
+
+# 文件存储配置
+storage:
+  type: ${STORAGE_TYPE:minio}  # 可选: minio, local, memory
+  local:
+    path: ${LOCAL_STORAGE_PATH:./storage}
+  minio:
+    bucket: ${MINIO_BUCKET_NAME:zrag-documents}
+    prefix: ${MINIO_PREFIX:documents/}
+
+# 默认使用的模型提供商
+default:
+  provider: ${DEFAULT_PROVIDER:qwen}  # 可选: openai, qwen, ollama
+  rerank:
+    provider: ${DEFAULT_RERANK_PROVIDER:qwen}  # 可选: openai, qwen, ollama
+
+# 日志配置
+logging:
+  level:
+    com.unionhole.zrag: INFO
+    dev.langchain4j: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

@@ -1,0 +1,32 @@
+Z-RAG - 基于LangChain4j的检索增强生成系统
+
+Copyright 2025 james-zou
+
+This product includes software developed by the following projects:
+
+- Spring Boot (https://spring.io/projects/spring-boot)
+  Copyright 2012-2024 Pivotal Software, Inc.
+  Licensed under the Apache License, Version 2.0
+
+- LangChain4j (https://github.com/langchain4j/langchain4j)
+  Copyright 2024 LangChain4j
+  Licensed under the Apache License, Version 2.0
+
+- Jackson (https://github.com/FasterXML/jackson)
+  Copyright 2008-2024 FasterXML
+  Licensed under the Apache License, Version 2.0
+
+- Lombok (https://projectlombok.org/)
+  Copyright 2009-2024 Project Lombok
+  Licensed under the MIT License
+
+- MinIO (https://min.io/)
+  Copyright 2015-2024 MinIO, Inc.
+  Licensed under the Apache License, Version 2.0
+
+- Milvus (https://milvus.io/)
+  Copyright 2019-2024 Zilliz
+  Licensed under the Apache License, Version 2.0
+
+For more information about the licenses of the dependencies, please refer to the 
+Maven dependencies in pom.xml file.
