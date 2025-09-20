@@ -1,0 +1,39 @@
+[Unit]
+Description=Z-RAG RAG Service
+Documentation=https://github.com/james-zou/zrag
+After=network.target
+
+[Service]
+Type=forking
+User=zrag
+Group=zrag
+WorkingDirectory=/opt/zrag
+ExecStart=/opt/zrag/bin/zrag start
+ExecStop=/opt/zrag/bin/zrag stop
+ExecReload=/opt/zrag/bin/zrag restart
+PIDFile=/opt/zrag/logs/zrag.pid
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zrag
+
+# 环境变量
+Environment=JAVA_HOME=/usr/lib/jvm/java-8-openjdk
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=SPRING_CONFIG_LOCATION=classpath:/application.yml,file:/opt/zrag/config/
+Environment=CLASSPATH=/opt/zrag/lib/*
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=32768
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/zrag/logs /opt/zrag/data /opt/zrag/temp
+
+[Install]
+WantedBy=multi-user.target

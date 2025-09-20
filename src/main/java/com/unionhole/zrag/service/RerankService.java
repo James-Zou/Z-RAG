@@ -17,6 +17,7 @@
 
 package com.unionhole.zrag.service;
 
+import com.unionhole.zrag.util.StreamingUtils;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +46,7 @@ public class RerankService {
     @Value("${rerank.qwen.api.key:}")
     private String qwenApiKey;
 
-    @Value("${rerank.qwen.base.url:https://dashscope.aliyuncs.com/api/v1}")
+    @Value("${rerank.qwen.base.url:https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}")
     private String qwenBaseUrl;
 
     @Value("${rerank.qwen.model:qwen-reranker}")
@@ -81,20 +83,37 @@ public class RerankService {
                                                    List<EmbeddingMatch<TextSegment>> matches, 
                                                    int maxResults) {
         if (matches == null || matches.isEmpty()) {
+            log.info("=== 重排服务 ===");
+            log.info("输入匹配结果为空，跳过重排");
             return matches;
         }
 
+        log.info("=== 重排服务开始 ===");
+        log.info("查询文本: {}", query);
+        log.info("输入匹配结果数量: {}", matches.size());
+        log.info("最大返回结果数: {}", maxResults);
+        log.info("使用重排提供商: {}", defaultRerankProvider);
+
         try {
+            List<EmbeddingMatch<TextSegment>> result;
             switch (defaultRerankProvider.toLowerCase()) {
                 case "qwen":
-                    return rerankWithQwen(query, matches, maxResults);
+                    result = rerankWithQwen(query, matches, maxResults);
+                    break;
                 case "openai":
-                    return rerankWithOpenAI(query, matches, maxResults);
+                    result = rerankWithOpenAI(query, matches, maxResults);
+                    break;
                 case "ollama":
-                    return rerankWithOllama(query, matches, maxResults);
+                    result = rerankWithOllama(query, matches, maxResults);
+                    break;
                 default:
-                    return rerankWithDefault(query, matches, maxResults);
+                    result = rerankWithDefault(query, matches, maxResults);
+                    break;
             }
+            
+            log.info("重排完成，返回结果数量: {}", result.size());
+            log.info("=== 重排服务结束 ===");
+            return result;
         } catch (Exception e) {
             log.error("重排失败，使用默认排序", e);
             return rerankWithDefault(query, matches, maxResults);
@@ -113,52 +132,90 @@ public class RerankService {
         }
 
         try {
-            // 构建重排请求
-            String url = qwenBaseUrl + "/services/aigc/text-generation/generation";
+            // 构建重排请求 - 使用正确的千问重排API端点
+            String url = qwenBaseUrl;
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + qwenApiKey);
 
-            // 构建重排提示词
-            StringBuilder prompt = new StringBuilder();
-            prompt.append("请根据查询内容对以下文档片段进行相关性排序，返回最相关的文档。\n\n");
-            prompt.append("查询: ").append(query).append("\n\n");
-            prompt.append("文档片段:\n");
-            
-            for (int i = 0; i < matches.size(); i++) {
-                prompt.append(i + 1).append(". ").append(matches.get(i).embedded().text()).append("\n");
-            }
-            
-            prompt.append("\n请返回最相关的文档编号，用逗号分隔，按相关性从高到低排序。");
-
+            // 构建千问重排API请求格式
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", qwenModel);
             
+            // 构建input对象
             Map<String, Object> input = new HashMap<>();
-            Map<String, Object> message = new HashMap<>();
-            message.put("role", "user");
-            message.put("content", prompt.toString());
-            input.put("messages", new Object[]{message});
+            input.put("query", query);
+            
+            // 构建文档列表 - 根据官方文档，documents应该是字符串数组
+            List<String> documents = new ArrayList<>();
+            for (EmbeddingMatch<TextSegment> match : matches) {
+                documents.add(match.embedded().text());
+            }
+            input.put("documents", documents);
             requestBody.put("input", input);
             
+            // 重排参数
             Map<String, Object> parameters = new HashMap<>();
-            parameters.put("temperature", 0.1);
-            parameters.put("max_tokens", 100);
+            parameters.put("top_n", Math.min(maxResults, matches.size()));
+            parameters.put("return_documents", true);
             requestBody.put("parameters", parameters);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            // 发送请求
+            // 打印千问重排模型信息
+            log.info("=== 千问重排模型调用 ===");
+            log.info("模型名称: {}", qwenModel);
+            log.info("API地址: {}", url);
+            log.info("请求参数: {}", requestBody);
+            log.info("查询文本: {}", query);
+            log.info("文档数量: {}", documents.size());
+            
+            long startTime = System.currentTimeMillis();
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            long endTime = System.currentTimeMillis();
+            
+            // 打印响应结果
+            log.info("响应状态码: {}", response.getStatusCode());
+            log.info("响应耗时: {} ms", (endTime - startTime));
+            log.info("响应体: {}", response.getBody());
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
                 Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
                 
-                if (output != null && output.containsKey("text")) {
-                    String rankedIndices = (String) output.get("text");
-                    return rerankByIndices(matches, rankedIndices, maxResults);
+                if (output != null) {
+                    List<Map<String, Object>> results = (List<Map<String, Object>>) output.get("results");
+                    
+                    if (results != null && !results.isEmpty()) {
+                        // 解析重排结果
+                        List<EmbeddingMatch<TextSegment>> rerankedMatches = new ArrayList<>();
+                        
+                        for (Map<String, Object> result : results) {
+                            Integer index = (Integer) result.get("index");
+                            Double score = (Double) result.get("relevance_score");
+                            
+                            if (index != null && index >= 0 && index < matches.size()) {
+                                // 更新相似度分数
+                                EmbeddingMatch<TextSegment> originalMatch = matches.get(index);
+                                EmbeddingMatch<TextSegment> rerankedMatch = new EmbeddingMatch<>(
+                                    score != null ? score : originalMatch.score(),
+                                    originalMatch.embeddingId(),
+                                    originalMatch.embedding(),
+                                    originalMatch.embedded()
+                                );
+                                rerankedMatches.add(rerankedMatch);
+                            }
+                        }
+                        
+                        // 如果重排结果为空，返回原始顺序
+                        if (rerankedMatches.isEmpty()) {
+                            log.warn("重排结果为空，返回原始顺序");
+                            return matches.stream().limit(maxResults).collect(Collectors.toList());
+                        }
+                        
+                        return rerankedMatches.stream().limit(maxResults).collect(Collectors.toList());
+                    }
                 }
             }
 
@@ -225,8 +282,22 @@ public class RerankService {
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-            // 发送请求
+            // 打印Ollama重排模型信息
+            log.info("=== Ollama重排模型调用 ===");
+            log.info("模型名称: {}", ollamaModel);
+            log.info("API地址: {}", url);
+            log.info("请求参数: {}", requestBody);
+            log.info("提示词长度: {} 字符", prompt.length());
+            log.info("提示词预览: {}", prompt.length() > 200 ? prompt.substring(0, 200) + "..." : prompt.toString());
+            
+            long startTime = System.currentTimeMillis();
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            long endTime = System.currentTimeMillis();
+            
+            // 打印响应结果
+            log.info("响应状态码: {}", response.getStatusCode());
+            log.info("响应耗时: {} ms", (endTime - startTime));
+            log.info("响应体: {}", response.getBody());
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
@@ -303,5 +374,200 @@ public class RerankService {
         status.append("- OpenAI配置: ").append(openaiApiKey != null && !openaiApiKey.isEmpty() ? "已配置" : "未配置").append("\n");
         status.append("- Ollama配置: ").append("已配置").append("\n");
         return status.toString();
+    }
+    
+    /**
+     * 流式重排
+     * @param query 查询文本
+     * @param matches 匹配结果
+     * @param maxResults 最大结果数
+     * @param emitter 流式响应发射器
+     * @return 重排后的结果
+     */
+    public List<TextSegment> rerankStream(String query, List<EmbeddingMatch<TextSegment>> matches, int maxResults, SseEmitter emitter) {
+        try {
+            log.info("=== 重排服务开始 ===");
+            log.info("查询文本: {}", query);
+            log.info("输入匹配结果数量: {}", matches.size());
+            log.info("最大返回结果数: {}", maxResults);
+            log.info("使用重排提供商: {}", defaultRerankProvider);
+            
+            if (matches.isEmpty()) {
+                StreamingUtils.sendRerank(emitter, "❌ 没有需要重排的结果");
+                log.info("没有需要重排的结果");
+                return new ArrayList<>();
+            }
+            
+            if (matches.size() <= maxResults) {
+                StreamingUtils.sendRerank(emitter, String.format("✅ 结果数量(%d)不超过最大限制(%d)，无需重排", matches.size(), maxResults));
+                log.info("结果数量不超过最大限制，无需重排");
+                return matches.stream()
+                        .map(EmbeddingMatch::embedded)
+                        .collect(Collectors.toList());
+            }
+            
+            // 发送重排进度
+            StreamingUtils.sendRerank(emitter, String.format("🔄 正在对 %d 个结果进行重排...", matches.size()));
+            
+            List<TextSegment> rerankedSegments;
+            
+            switch (defaultRerankProvider.toLowerCase()) {
+                case "qwen":
+                    rerankedSegments = rerankWithQwenStream(query, matches, maxResults, emitter);
+                    break;
+                case "openai":
+                    rerankedSegments = rerankWithOpenAIStream(query, matches, maxResults, emitter);
+                    break;
+                case "ollama":
+                    rerankedSegments = rerankWithOllamaStream(query, matches, maxResults, emitter);
+                    break;
+                default:
+                    log.warn("未知的重排提供商: {}，使用默认重排", defaultRerankProvider);
+                    rerankedSegments = rerankWithDefault("", matches, maxResults).stream()
+                            .map(EmbeddingMatch::embedded)
+                            .collect(Collectors.toList());
+                    break;
+            }
+            
+            log.info("重排完成，返回结果数量: {}", rerankedSegments.size());
+            log.info("=== 重排服务结束 ===");
+            
+            return rerankedSegments;
+            
+        } catch (Exception e) {
+            log.error("流式重排失败", e);
+            StreamingUtils.sendError(emitter, "重排失败: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+    
+    /**
+     * 使用千问进行流式重排
+     */
+    private List<TextSegment> rerankWithQwenStream(String query, List<EmbeddingMatch<TextSegment>> matches, int maxResults, SseEmitter emitter) {
+        try {
+            StreamingUtils.sendRerank(emitter, "🤖 使用千问模型进行重排...");
+            
+            // 构建重排请求
+            String url = qwenBaseUrl;
+            
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", qwenModel);
+            
+            // 构建input对象
+            Map<String, Object> input = new HashMap<>();
+            input.put("query", query);
+            
+            // 构建文档列表 - 根据官方文档，documents应该是字符串数组
+            List<String> documents = new ArrayList<>();
+            for (EmbeddingMatch<TextSegment> match : matches) {
+                documents.add(match.embedded().text());
+            }
+            input.put("documents", documents);
+            requestBody.put("input", input);
+            
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("top_n", maxResults);
+            parameters.put("return_documents", true);
+            requestBody.put("parameters", parameters);
+            
+            log.info("=== 千问重排模型调用 ===");
+            log.info("模型名称: {}", qwenModel);
+            log.info("API地址: {}", url);
+            log.info("请求参数: {}", requestBody);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + qwenApiKey);
+            
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+            
+            long startTime = System.currentTimeMillis();
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            long endTime = System.currentTimeMillis();
+            
+            log.info("千问重排API调用完成，耗时: {} ms", endTime - startTime);
+            
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                
+                if (output != null) {
+                    List<Map<String, Object>> results = (List<Map<String, Object>>) output.get("results");
+                    
+                    if (results != null && !results.isEmpty()) {
+                        List<TextSegment> rerankedSegments = new ArrayList<>();
+                        for (Map<String, Object> result : results) {
+                            Integer index = (Integer) result.get("index");
+                            if (index != null && index < matches.size()) {
+                                rerankedSegments.add(matches.get(index).embedded());
+                            }
+                        }
+                        
+                        StreamingUtils.sendRerank(emitter, String.format("✅ 千问重排完成，返回 %d 个结果", rerankedSegments.size()));
+                        return rerankedSegments;
+                    }
+                }
+            }
+            
+            // 如果API调用失败，使用默认重排
+            StreamingUtils.sendRerank(emitter, "⚠️ 千问重排失败，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+            
+        } catch (Exception e) {
+            log.error("千问重排模型调用异常", e);
+            StreamingUtils.sendRerank(emitter, "⚠️ 千问重排异常，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+        }
+    }
+    
+    /**
+     * 使用OpenAI进行流式重排
+     */
+    private List<TextSegment> rerankWithOpenAIStream(String query, List<EmbeddingMatch<TextSegment>> matches, int maxResults, SseEmitter emitter) {
+        try {
+            StreamingUtils.sendRerank(emitter, "🤖 使用OpenAI模型进行重排...");
+            
+            // 这里可以实现OpenAI的重排逻辑
+            // 暂时使用默认重排
+            StreamingUtils.sendRerank(emitter, "⚠️ OpenAI重排暂未实现，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+            
+        } catch (Exception e) {
+            log.error("OpenAI重排失败", e);
+            StreamingUtils.sendRerank(emitter, "⚠️ OpenAI重排失败，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+        }
+    }
+    
+    /**
+     * 使用Ollama进行流式重排
+     */
+    private List<TextSegment> rerankWithOllamaStream(String query, List<EmbeddingMatch<TextSegment>> matches, int maxResults, SseEmitter emitter) {
+        try {
+            StreamingUtils.sendRerank(emitter, "🤖 使用Ollama模型进行重排...");
+            
+            // 这里可以实现Ollama的重排逻辑
+            // 暂时使用默认重排
+            StreamingUtils.sendRerank(emitter, "⚠️ Ollama重排暂未实现，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+            
+        } catch (Exception e) {
+            log.error("Ollama重排失败", e);
+            StreamingUtils.sendRerank(emitter, "⚠️ Ollama重排失败，使用默认重排");
+            return rerankWithDefault("", matches, maxResults).stream()
+                    .map(EmbeddingMatch::embedded)
+                    .collect(Collectors.toList());
+        }
     }
 }

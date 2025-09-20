@@ -22,7 +22,9 @@ import dev.langchain4j.store.embedding.EmbeddingMatch;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import com.unionhole.zrag.util.WeaviateLLMUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "vector-store.type", havingValue = "weaviate")
 public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
 
     private final WeaviateLLMUtils weaviateUtils;
@@ -54,13 +57,17 @@ public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
     @Value("${weaviate.scheme:http}")
     private String scheme;
 
-    public WeaviateEmbeddingStore(WeaviateLLMUtils weaviateUtils) {
+    public WeaviateEmbeddingStore(@Autowired(required = false) WeaviateLLMUtils weaviateUtils) {
         this.weaviateUtils = weaviateUtils;
     }
 
     @PostConstruct
     public void initialize() {
-        createClassIfNotExists();
+        if (weaviateUtils != null) {
+            createClassIfNotExists();
+        } else {
+            log.warn("WeaviateLLMUtils 不可用，跳过 Weaviate 初始化");
+        }
     }
 
     @Override
@@ -83,6 +90,11 @@ public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
     }
 
     public void add(String id, Embedding embedding, TextSegment textSegment) {
+        if (weaviateUtils == null) {
+            log.warn("WeaviateLLMUtils 不可用，无法添加向量");
+            return;
+        }
+        
         try {
             Map<String, Object> properties = new HashMap<>();
             properties.put("text", textSegment != null ? textSegment.text() : "");
@@ -129,6 +141,11 @@ public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
 
     @Override
     public List<EmbeddingMatch<TextSegment>> findRelevant(Embedding referenceEmbedding, int maxResults, double minScore) {
+        if (weaviateUtils == null) {
+            log.warn("WeaviateLLMUtils 不可用，无法查询向量");
+            return Collections.emptyList();
+        }
+        
         try {
             log.info("执行Weaviate向量查询，maxResults: {}, minScore: {}", maxResults, minScore);
             
@@ -177,6 +194,11 @@ public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
     }
 
     public List<TextSegment> findAll() {
+        if (weaviateUtils == null) {
+            log.warn("WeaviateLLMUtils 不可用，无法查询所有数据");
+            return Collections.emptyList();
+        }
+        
         try {
             log.info("执行Weaviate findAll查询");
             
@@ -212,6 +234,11 @@ public class WeaviateEmbeddingStore implements EmbeddingStore<TextSegment> {
     }
 
     public void clear() {
+        if (weaviateUtils == null) {
+            log.warn("WeaviateLLMUtils 不可用，无法清空数据");
+            return;
+        }
+        
         try {
             log.info("开始清空Weaviate数据");
             

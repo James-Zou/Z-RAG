@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: z-rag
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 3600
 
 # 模型配置
 models:
@@ -20,12 +30,12 @@ models:
   # 千问模型配置（国内可用）
   qwen:
     api:
-      key: ${QWEN_API_KEY:}  # 从阿里云控制台获取
+      key: ${QWEN_API_KEY:}  # 从VM options或环境变量获取
     base:
-      url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
-    model: ${QWEN_MODEL:qwen-turbo}
+      url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    model: ${QWEN_MODEL:qwen-plus}
     embedding:
-      model: ${QWEN_EMBEDDING_MODEL:text-embedding-v1}
+      model: ${QWEN_EMBEDDING_MODEL:text-embedding-v3}
   
   # Ollama本地模型配置
   ollama:
@@ -40,10 +50,10 @@ rerank:
   # 千问重排模型
   qwen:
     api:
-      key: ${QWEN_API_KEY:}
+      key: ${QWEN_API_KEY:} # 从VM options或环境变量获取
     base:
-      url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/api/v1}
-    model: ${QWEN_RERANK_MODEL:qwen-reranker}
+      url: ${QWEN_RERANK_BASE_URL:https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank}
+    model: ${QWEN_RERANK_MODEL:gte-rerank-v2}
   
   # OpenAI重排模型
   openai:
@@ -61,10 +71,10 @@ rerank:
 
 # MinIO对象存储配置
 minio:
-  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-  access-key: ${MINIO_ACCESS_KEY:minioadmin}
-  secret-key: ${MINIO_SECRET_KEY:minioadmin}
-  bucket-name: ${MINIO_BUCKET_NAME:zrag-documents}
+  endpoint: ${MINIO_ENDPOINT:} # 从VM options或环境变量获取
+  access-key: ${MINIO_ACCESS_KEY:} # 从VM options或环境变量获取
+  secret-key: ${MINIO_SECRET_KEY:} # 从VM options或环境变量获取
+  bucket-name: ${MINIO_BUCKET_NAME:} # 从VM options或环境变量获取
   auto-create-bucket: true
 
 # Weaviate向量数据库配置
@@ -82,15 +92,16 @@ weaviate:
 
 # Milvus向量数据库配置
 milvus:
-  host: ${MILVUS_HOST:localhost}
-  port: ${MILVUS_PORT:19530}
-  database: ${MILVUS_DATABASE:zrag}
-  collection: ${MILVUS_COLLECTION:documents}
+  uri: ${MILVUS_URI:} #从VM options或环境变量获取
+  database: ${MILVUS_DATABASE:zrag} #从VM options或环境变量获取
+  collection: ${MILVUS_COLLECTION:km} #从VM options或环境变量获取
+  # 认证配置
+  token: ${MILVUS_TOKEN:}  # 从VM options或环境变量获取
   # 连接配置
   connect-timeout: ${MILVUS_CONNECT_TIMEOUT:10000}
   idle-timeout: ${MILVUS_IDLE_TIMEOUT:60000}
   # 向量配置
-  vector-dimension: ${MILVUS_VECTOR_DIMENSION:384}  # AllMiniLmL6V2的向量维度
+  vector-dimension: ${MILVUS_VECTOR_DIMENSION:1024}  # 千问 text-embedding-v3的向量维度
   index-type: ${MILVUS_INDEX_TYPE:IVF_FLAT}
   metric-type: ${MILVUS_METRIC_TYPE:COSINE}
 
@@ -112,6 +123,12 @@ default:
   provider: ${DEFAULT_PROVIDER:qwen}  # 可选: openai, qwen, ollama
   rerank:
     provider: ${DEFAULT_RERANK_PROVIDER:qwen}  # 可选: openai, qwen, ollama
+
+# Apache Tika文档解析配置
+tika:
+  enabled: ${TIKA_ENABLED:true}  # 是否启用Tika解析
+  max-text-length: ${TIKA_MAX_TEXT_LENGTH:100000}  # 最大文本长度
+  timeout: ${TIKA_TIMEOUT:30000}  # 解析超时时间（毫秒）
 
 # 日志配置
 logging:

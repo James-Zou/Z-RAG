@@ -47,7 +47,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <langchain4j.version>0.29.1</langchain4j.version>
-        <spring.boot.version>2.7.18</spring.boot.version>
+        <spring.boot.version>2.5.15</spring.boot.version>
     </properties>
 
     <dependencies>
@@ -94,6 +94,52 @@
             <version>8.5.7</version>
         </dependency>
         
+        <!-- Apache POI for Office documents -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-scratchpad</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml-lite</artifactId>
+            <version>5.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlbeans</groupId>
+            <artifactId>xmlbeans</artifactId>
+            <version>5.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.virtuald</groupId>
+            <artifactId>curvesapi</artifactId>
+            <version>1.06</version>
+        </dependency>
+        
+        <!-- Apache Tika for document parsing -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.1</version>
+        </dependency>
+        
+        <!-- Apache Tika parsers for various document formats -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>2.9.1</version>
+        </dependency>
+        
         <!-- Weaviate向量数据库 -->
         <dependency>
             <groupId>io.weaviate</groupId>
@@ -105,7 +151,7 @@
         <dependency>
             <groupId>io.milvus</groupId>
             <artifactId>milvus-sdk-java</artifactId>
-            <version>2.3.4</version>
+            <version>2.4.8</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -133,6 +179,10 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>javax.servlet-api</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
@@ -157,6 +207,23 @@
             <version>${spring.boot.version}</version>
         </dependency>
 
+        <!-- 强制使用兼容的Log4j2版本 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
         <!-- 强制使用SLF4J 1.7.x版本 -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -176,6 +243,14 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.30</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- Servlet API 4.0 for Tomcat 9 compatibility -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -214,13 +289,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring.boot.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            
+            <!-- Maven JAR Plugin for creating application-only JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.unionhole.zrag.ZRagApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
             </plugin>
             
             <!-- Maven Compiler Plugin -->
@@ -245,6 +332,7 @@
                     </descriptors>
                     <finalName>zrag-${project.version}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
+                    <tarLongFileMode>posix</tarLongFileMode>
                 </configuration>
                 <executions>
                     <execution>
@@ -253,6 +341,58 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Maven Resources Plugin for copying additional files -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-scripts</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/scripts</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>script</directory>
+                                    <includes>
+                                        <include>zrag</include>
+                                        <include>zrag.service</include>
+                                        <include>install.sh</include>
+                                        <include>uninstall.sh</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Maven Dependency Plugin for copying dependencies -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <excludeTransitive>false</excludeTransitive>
+                            <stripVersion>false</stripVersion>
+                            <excludeScope>provided</excludeScope>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

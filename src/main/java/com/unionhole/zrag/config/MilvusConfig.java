@@ -19,13 +19,13 @@ package com.unionhole.zrag.config;
 
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
+import io.milvus.v2.client.ConnectConfig;
+import io.milvus.v2.client.MilvusClientV2;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Milvus向量数据库配置类
@@ -34,11 +34,11 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class MilvusConfig {
 
-    @Value("${milvus.host:localhost}")
-    private String host;
-
-    @Value("${milvus.port:19530}")
-    private int port;
+    @Value("${milvus.uri:https://in03-feed7b0f527e86f.serverless.aws-eu-central-1.cloud.zilliz.com}")
+    private String uri;
+    
+    @Value("${milvus.token:}")
+    private String token;
     
     /**
      * -- GETTER --
@@ -59,26 +59,35 @@ public class MilvusConfig {
     @Value("${milvus.connect-timeout:10000}")
     private int connectTimeout;
 
-    @Value("${milvus.idle-timeout:60000}")
-    private int idleTimeout;
-
     /**
      * 配置Milvus客户端
      */
     @Bean
-    public MilvusServiceClient milvusClient() {
+    public MilvusClientV2 milvusClient() {
         try {
-            ConnectParam connectParam = ConnectParam.newBuilder()
-                    .withHost(host)
-                    .withPort(port)
-                    .withDatabaseName(database)
-                    .withConnectTimeout(connectTimeout, TimeUnit.MILLISECONDS)
-                    .withIdleTimeout(idleTimeout,TimeUnit.MILLISECONDS)
-                    .build();
-
-            MilvusServiceClient client = new MilvusServiceClient(connectParam);
+            // 添加调试信息
+            log.info("Milvus连接参数 - URI: {}, Database: {}, Token: {}", 
+                    uri, database, token != null ? "已设置" : "未设置");
             
-            log.info("Milvus客户端配置成功: {}:{}", host, port);
+            // 如果提供了Token，则添加Token认证
+            String cleanToken = token;
+            if (token != null && !token.trim().isEmpty()) {
+                // 移除Bearer前缀（如果有的话）
+                cleanToken = token.startsWith("Bearer ") ? token.substring(7) : token;
+                log.info("使用Token认证连接Milvus，Token长度: {}", cleanToken.length());
+            } else {
+                log.warn("未提供Token，尝试无认证连接（可能失败）");
+            }
+            
+            log.info("开始创建MilvusClientV2...");
+            MilvusClientV2 client = new MilvusClientV2(ConnectConfig.builder()
+                    .uri(uri)
+                    .token(cleanToken)
+                    .secure(true)  // Zilliz Cloud 使用 HTTPS
+                    .connectTimeoutMs(5000L)
+                    .build());
+            
+            log.info("Milvus客户端配置成功: {}", uri);
             return client;
         } catch (Exception e) {
             log.error("Milvus客户端配置失败", e);

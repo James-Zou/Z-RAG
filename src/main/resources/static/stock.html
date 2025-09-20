@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#8b1538">
+    <title>股神投资知识平台</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/stock-theme.css">
+    <link href="lib/font-awesome/css/all.min.css" rel="stylesheet">
+    
+    <!-- 文档预览库 -->
+    <script src="lib/mammoth/mammoth.browser.min.js"></script>
+    <script src="lib/xlsx/xlsx.full.min.js"></script>
+    <script src="lib/pdfjs/pdf.min.js"></script>
+    
+    <!-- ECharts图表库 - 本地加载 -->
+    <script src="lib/echarts/echarts.min.js"></script>
+</head>
+<body class="stock-theme">
+<div class="app-container stock-theme">
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- 侧边栏 -->
+    <aside class="sidebar stock-sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="stock-icon">📈</i> 股神投资</h2>
+            <p>智能投资知识平台</p>
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-item active" data-tab="chat">
+                    <i class="fas fa-chart-line"></i>
+                    <span>投资问答</span>
+                </li>
+                <li class="nav-item" data-tab="kline">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>K线监控</span>
+                </li>
+                <li class="nav-item" data-tab="ai-stock">
+                    <i class="fas fa-robot"></i>
+                    <span>AI选股</span>
+                </li>
+                <li class="nav-item" data-tab="ai-trade">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <span>AI交易</span>
+                </li>
+                <li class="nav-item" data-tab="market">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>市场动态</span>
+                </li>
+                <li class="nav-item" data-tab="documents">
+                    <i class="fas fa-file-alt"></i>
+                    <span>投资文档</span>
+                </li>
+                <li class="nav-item" data-tab="knowledge">
+                    <i class="fas fa-database"></i>
+                    <span>知识管理</span>
+                </li>
+                <li class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>系统设置</span>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">系统正常</span>
+            </div>
+            <div class="theme-switch">
+                <button class="btn btn-sm btn-secondary" onclick="switchToGeneral()">
+                    <i class="fas fa-exchange-alt"></i> 切换到通用版
+                </button>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- 移动端遮罩层 -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- 投资问答页面 -->
+        <div class="tab-content active" id="chat">
+            <div class="chat-container stock-chat">
+                <div class="chat-header stock-header">
+                    <h3><i class="fas fa-chart-line"></i> 股神投资助手</h3>
+                    <div class="chat-controls">
+                        <button class="btn btn-secondary" id="clearChat">
+                            <i class="fas fa-trash"></i> 清空对话
+                        </button>
+                        <button class="btn btn-primary" id="newChat">
+                            <i class="fas fa-plus"></i> 新建对话
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-content">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="welcome-message stock-welcome">
+                            <div class="welcome-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h4>欢迎使用股神投资知识平台</h4>
+                            <p>我是您的专业投资顾问，可以帮您分析股票、解答投资问题、提供市场洞察。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 右侧引用信息区域 -->
+                    <div class="references-panel" id="referencesPanel">
+                        <div class="references-header">
+                            <h4><i class="fas fa-book"></i> 引用来源</h4>
+                            <button class="btn btn-sm btn-secondary" id="toggleReferences">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="references-content" id="referencesContent">
+                            <div class="no-references">
+                                <i class="fas fa-info-circle"></i>
+                                <p>暂无引用信息</p>
+                            </div>
+                        </div>
+                    </div>
+                
+                </div>
+                
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <textarea id="chatInput" placeholder="请输入您的投资问题..." rows="3"></textarea>
+                        <button class="btn btn-primary" id="sendMessage">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-hints">
+                        <span class="hint">按 Enter 发送，Shift+Enter 换行</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- K线监控页面 -->
+        <div class="tab-content" id="kline">
+            <div class="page-header">
+                <h3><i class="fas fa-chart-candlestick"></i> K线监控</h3>
+                <div class="page-actions">
+                    <select id="klineTimeframe" class="form-select">
+                        <option value="1m">1分钟</option>
+                        <option value="5m">5分钟</option>
+                        <option value="15m">15分钟</option>
+                        <option value="30m">30分钟</option>
+                        <option value="1h">1小时</option>
+                        <option value="4h">4小时</option>
+                        <option value="1d" selected>日线</option>
+                        <option value="1w">周线</option>
+                    </select>
+                    <button class="btn btn-secondary" id="refreshKline">
+                        <i class="fas fa-sync"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 股票搜索 -->
+            <div class="stock-search">
+                <div class="search-input-group">
+                    <input type="text" id="stockSearchInput" placeholder="输入股票代码或名称，如：000001 或 平安银行" class="form-input">
+                    <button class="btn btn-primary" id="searchStock">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                </div>
+                <div class="search-suggestions" id="searchSuggestions"></div>
+            </div>
+            
+            <!-- K线图表区域 -->
+            <div class="kline-container">
+                <div class="chart-header">
+                    <div class="stock-info">
+                        <h4 id="currentStockName">请选择股票</h4>
+                        <div class="stock-details">
+                            <span id="currentStockCode">-</span>
+                            <span id="currentStockPrice">-</span>
+                            <span id="currentStockChange" class="change">-</span>
+                        </div>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="btn btn-sm btn-secondary" id="fullscreenChart">
+                            <i class="fas fa-expand"></i> 全屏
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container" id="klineChart">
+                    <div class="chart-placeholder" id="chartPlaceholder">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>选择股票查看K线图</p>
+                    </div>
+                    <div id="echartsContainer" style="width: 100%; height: 100%; display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- 技术指标 -->
+            <div class="technical-indicators">
+                <h4><i class="fas fa-chart-line"></i> 技术指标</h4>
+                <div class="indicators-grid">
+                    <div class="indicator-card">
+                        <h5>MA均线</h5>
+                        <div class="indicator-values">
+                            <span>MA5: <span id="ma5">-</span></span>
+                            <span>MA10: <span id="ma10">-</span></span>
+                            <span>MA20: <span id="ma20">-</span></span>
+                        </div>
+                    </div>
+                    <div class="indicator-card">
+                        <h5>MACD</h5>
+                        <div class="indicator-values">
+                            <span>DIF: <span id="macdDIF">-</span></span>
+                            <span>DEA: <span id="macdDEA">-</span></span>
+                            <span>MACD: <span id="macdMACD">-</span></span>
+                        </div>
+                    </div>
+                    <div class="indicator-card">
+                        <h5>RSI</h5>
+                        <div class="indicator-values">
+                            <span>RSI6: <span id="rsi6">-</span></span>
+                            <span>RSI12: <span id="rsi12">-</span></span>
+                            <span>RSI24: <span id="rsi24">-</span></span>
+                        </div>
+                    </div>
+                    <div class="indicator-card">
+                        <h5>布林带</h5>
+                        <div class="indicator-values">
+                            <span>上轨: <span id="bollUpper">-</span></span>
+                            <span>中轨: <span id="bollMiddle">-</span></span>
+                            <span>下轨: <span id="bollLower">-</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI选股页面 -->
+        <div class="tab-content" id="ai-stock">
+            <div class="page-header">
+                <h3><i class="fas fa-robot"></i> AI智能选股</h3>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="startAISelection">
+                        <i class="fas fa-magic"></i> 开始选股
+                    </button>
+                    <button class="btn btn-secondary" id="refreshAIStocks">
+                        <i class="fas fa-sync"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            
+            <!-- AI选股风险提示 -->
+            <div class="ai-risk-notice">
+                <h5><i class="fas fa-exclamation-triangle"></i> 重要风险提示</h5>
+                <p>AI选股功能仅供学习研究使用，不构成任何投资建议。所有推荐结果基于历史数据和算法分析，不保证未来收益。投资有风险，决策需谨慎，请结合自身情况并咨询专业投资顾问。</p>
+            </div>
+            
+            <!-- 选股条件 -->
+            <div class="selection-criteria">
+                <h4><i class="fas fa-filter"></i> 选股条件</h4>
+                <div class="criteria-grid">
+                    <div class="criteria-group">
+                        <label>行业板块</label>
+                        <select id="industryFilter" class="form-select">
+                            <option value="">全部行业</option>
+                            <option value="bank">银行</option>
+                            <option value="tech">科技</option>
+                            <option value="healthcare">医疗</option>
+                            <option value="energy">能源</option>
+                            <option value="consumer">消费</option>
+                        </select>
+                    </div>
+                    <div class="criteria-group">
+                        <label>市值范围</label>
+                        <select id="marketCapFilter" class="form-select">
+                            <option value="">全部市值</option>
+                            <option value="large">大盘股 (>1000亿)</option>
+                            <option value="mid">中盘股 (100-1000亿)</option>
+                            <option value="small">小盘股 (<100亿)</option>
+                        </select>
+                    </div>
+                    <div class="criteria-group">
+                        <label>技术指标</label>
+                        <select id="technicalFilter" class="form-select">
+                            <option value="">全部技术</option>
+                            <option value="bullish">看涨信号</option>
+                            <option value="bearish">看跌信号</option>
+                            <option value="neutral">中性信号</option>
+                        </select>
+                    </div>
+                    <div class="criteria-group">
+                        <label>风险等级</label>
+                        <select id="riskFilter" class="form-select">
+                            <option value="">全部风险</option>
+                            <option value="low">低风险</option>
+                            <option value="medium">中风险</option>
+                            <option value="high">高风险</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI选股结果 -->
+            <div class="ai-selection-results">
+                <h4><i class="fas fa-star"></i> AI推荐股票</h4>
+                <div class="selection-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">推荐数量:</span>
+                        <span class="stat-value" id="recommendationCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">平均评分:</span>
+                        <span class="stat-value" id="averageScore">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">更新时间:</span>
+                        <span class="stat-value" id="lastUpdateTime">-</span>
+                    </div>
+                </div>
+                <div class="stocks-grid" id="aiStocksGrid">
+                    <!-- AI推荐的股票将在这里显示 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI交易页面 -->
+        <div class="tab-content" id="ai-trade">
+            <div class="page-header">
+                <h3><i class="fas fa-hand-holding-usd"></i> AI智能交易</h3>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="startAITrading">
+                        <i class="fas fa-play"></i> 启动交易
+                    </button>
+                    <button class="btn btn-warning" id="pauseAITrading">
+                        <i class="fas fa-pause"></i> 暂停交易
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 模拟交易警告 -->
+            <div class="simulation-warning">
+                <h5><i class="fas fa-info-circle"></i> 模拟交易环境</h5>
+                <p>本功能为模拟交易环境，不涉及真实资金和实际证券交易。所有交易记录、资产变化均为虚拟数据，仅供学习研究使用。本平台不接入任何证券交易系统，不提供真实交易服务。</p>
+            </div>
+            
+            <!-- 交易设置 -->
+            <div class="trading-settings">
+                <h4><i class="fas fa-cog"></i> 交易设置</h4>
+                <div class="settings-grid">
+                    <div class="setting-group">
+                        <label>交易模式</label>
+                        <select id="tradingMode" class="form-select">
+                            <option value="conservative">保守模式</option>
+                            <option value="balanced">平衡模式</option>
+                            <option value="aggressive">激进模式</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>最大仓位</label>
+                        <input type="number" id="maxPosition" value="30" min="1" max="100" class="form-input">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="setting-group">
+                        <label>止损比例</label>
+                        <input type="number" id="stopLoss" value="5" min="1" max="20" class="form-input">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="setting-group">
+                        <label>止盈比例</label>
+                        <input type="number" id="takeProfit" value="10" min="5" max="50" class="form-input">
+                        <span class="unit">%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 交易状态 -->
+            <div class="trading-status">
+                <h4><i class="fas fa-chart-line"></i> 交易状态</h4>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="status-content">
+                            <h5>交易状态</h5>
+                            <p id="tradingStatus">未启动</p>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="status-content">
+                            <h5>总资产</h5>
+                            <p id="totalAssets">¥100,000</p>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="status-content">
+                            <h5>持仓数量</h5>
+                            <p id="positionCount">0</p>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="status-content">
+                            <h5>今日收益</h5>
+                            <p id="todayProfit" class="change">+0.00%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 交易记录 -->
+            <div class="trading-records">
+                <h4><i class="fas fa-history"></i> 交易记录</h4>
+                <div class="records-table">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>股票</th>
+                            <th>操作</th>
+                            <th>数量</th>
+                            <th>价格</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                        </tr>
+                        </thead>
+                        <tbody id="tradingRecordsTable">
+                        <!-- 交易记录将在这里显示 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 市场动态页面 -->
+        <div class="tab-content" id="market">
+            <div class="page-header">
+                <h3><i class="fas fa-chart-bar"></i> 市场动态</h3>
+                <div class="page-actions">
+                    <button class="btn btn-secondary" id="refreshMarket">
+                        <i class="fas fa-sync"></i> 刷新数据
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 跑马灯新闻 -->
+            <div class="market-news-ticker">
+                <div class="ticker-header">
+                    <i class="fas fa-newspaper"></i>
+                    <span>实时财经资讯</span>
+                </div>
+                <div class="ticker-content" id="newsTicker">
+                    <div class="ticker-item">沪指上涨1.2%，科技股领涨</div>
+                    <div class="ticker-item">央行降准释放流动性，市场情绪乐观</div>
+                    <div class="ticker-item">新能源汽车板块表现强劲</div>
+                    <div class="ticker-item">外资持续流入A股市场</div>
+                    <div class="ticker-item">政策利好推动基建板块上涨</div>
+                </div>
+            </div>
+            
+            <!-- 市场概览 -->
+            <div class="market-overview">
+                <div class="market-stats">
+                    <div class="stat-card stock-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4 id="shanghaiIndex">3,245.67</h4>
+                            <p>上证指数</p>
+                            <span class="change positive">+1.2%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stock-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-area"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4 id="shenzhenIndex">10,234.56</h4>
+                            <p>深证成指</p>
+                            <span class="change positive">+0.8%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stock-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4 id="chineseIndex">2,156.78</h4>
+                            <p>创业板指</p>
+                            <span class="change negative">-0.3%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stock-stat">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4 id="volume">8,234.5亿</h4>
+                            <p>成交额</p>
+                            <span class="change positive">+15.2%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 热门股票 -->
+            <div class="hot-stocks">
+                <h4><i class="fas fa-fire"></i> 热门股票</h4>
+                <div class="stocks-list" id="hotStocksList">
+                    <div class="stock-item">
+                        <div class="stock-info">
+                            <span class="stock-code">000001</span>
+                            <span class="stock-name">平安银行</span>
+                        </div>
+                        <div class="stock-price">
+                            <span class="price">12.45</span>
+                            <span class="change positive">+2.1%</span>
+                        </div>
+                    </div>
+                    <div class="stock-item">
+                        <div class="stock-info">
+                            <span class="stock-code">000002</span>
+                            <span class="stock-name">万科A</span>
+                        </div>
+                        <div class="stock-price">
+                            <span class="price">18.67</span>
+                            <span class="change positive">+1.8%</span>
+                        </div>
+                    </div>
+                    <div class="stock-item">
+                        <div class="stock-info">
+                            <span class="stock-code">600036</span>
+                            <span class="stock-name">招商银行</span>
+                        </div>
+                        <div class="stock-price">
+                            <span class="price">45.23</span>
+                            <span class="change negative">-0.5%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 投资知识卡片 -->
+            <div class="knowledge-cards">
+                <h4><i class="fas fa-lightbulb"></i> 投资知识</h4>
+                <div class="cards-grid">
+                    <div class="knowledge-card">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h5>技术分析</h5>
+                        <p>学习K线图、移动平均线、RSI等技术指标的使用方法</p>
+                    </div>
+                    <div class="knowledge-card">
+                        <div class="card-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h5>基本面分析</h5>
+                        <p>了解财务报表分析、估值方法、行业分析等基础知识</p>
+                    </div>
+                    <div class="knowledge-card">
+                        <div class="card-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5>风险管理</h5>
+                        <p>掌握仓位管理、止损策略、分散投资等风险控制技巧</p>
+                    </div>
+                    <div class="knowledge-card">
+                        <div class="card-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h5>投资心理</h5>
+                        <p>培养正确的投资心态，避免情绪化交易</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 投资文档页面 -->
+        <div class="tab-content" id="documents">
+            <div class="page-header">
+                <h3><i class="fas fa-file-alt"></i> 投资文档管理</h3>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="uploadDocument">
+                        <i class="fas fa-upload"></i> 上传文档
+                    </button>
+                    <button class="btn btn-secondary" id="refreshDocuments">
+                        <i class="fas fa-sync"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h4>拖拽文件到此处或点击上传</h4>
+                    <p>支持 PDF, TXT, DOC, DOCX, MD, XLS, XLSX, PPT, PPTX 等格式</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.txt,.doc,.docx,.md,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp">
+                </div>
+            </div>
+            
+            <div class="documents-list">
+                <div class="list-header">
+                    <h4>已上传文档</h4>
+                    <div class="list-controls">
+                        <input type="text" id="searchDocuments" placeholder="搜索文档...">
+                        <select id="sortDocuments">
+                            <option value="name">按名称排序</option>
+                            <option value="date">按日期排序</option>
+                            <option value="size">按大小排序</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="documents-grid" id="documentsGrid">
+                    <!-- 文档列表将在这里动态生成 -->
+                </div>
+                <div class="pagination-container" id="paginationContainer">
+                    <!-- 分页控件将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 知识管理页面 -->
+        <div class="tab-content" id="knowledge">
+            <div class="page-header">
+                <h3><i class="fas fa-database"></i> 投资知识管理</h3>
+                <div class="page-actions">
+                    <button class="btn btn-primary" id="createKnowledge">
+                        <i class="fas fa-plus"></i> 创建知识库
+                    </button>
+                    <button class="btn btn-secondary" id="refreshKnowledge">
+                        <i class="fas fa-sync"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            
+            <div class="knowledge-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 id="totalDocuments">0</h4>
+                        <p>文档总数</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 id="totalChunks">0</h4>
+                        <p>知识片段</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h4 id="knowledgeBaseName">股神投资知识库</h4>
+                        <p>知识库名称</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="knowledge-content">
+                <div class="knowledge-tabs">
+                    <button class="tab-btn active" data-knowledge-tab="chunks">知识片段</button>
+                    <button class="tab-btn" data-knowledge-tab="vectors">向量数据</button>
+                    <button class="tab-btn" data-knowledge-tab="analytics">分析报告</button>
+                </div>
+                
+                <div class="knowledge-tab-content">
+                    <div class="knowledge-tab active" id="chunks">
+                        <div class="chunks-list" id="chunksList">
+                            <!-- 知识片段列表将在这里动态生成 -->
+                        </div>
+                    </div>
+                    <div class="knowledge-tab" id="vectors">
+                        <div class="vectors-info">
+                            <h4>向量数据概览</h4>
+                            <p>向量维度: 384</p>
+                            <p>向量数量: <span id="vectorCount">0</span></p>
+                            <p>存储类型: 内存存储</p>
+                        </div>
+                    </div>
+                    <div class="knowledge-tab" id="analytics">
+                        <div class="analytics-content">
+                            <h4>使用分析</h4>
+                            <div class="chart-placeholder">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>分析图表将在这里显示</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 系统设置页面 -->
+        <div class="tab-content" id="settings">
+            <div class="page-header">
+                <h3><i class="fas fa-cog"></i> 系统设置</h3>
+            </div>
+            
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h4>模型配置</h4>
+                    <div class="form-group">
+                        <label for="modelProvider">模型提供商</label>
+                        <select id="modelProvider">
+                            <option value="qwen">千问 (推荐)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="ollama">Ollama</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKey">API Key</label>
+                        <input type="password" id="apiKey" placeholder="请输入API Key">
+                    </div>
+                    <div class="form-group">
+                        <label for="modelName">模型名称</label>
+                        <input type="text" id="modelName" placeholder="模型名称">
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>检索配置</h4>
+                    <div class="form-group">
+                        <label for="maxResults">最大结果数</label>
+                        <input type="number" id="maxResults" value="5" min="1" max="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="minScore">最小相似度</label>
+                        <input type="number" id="minScore" value="0.6" min="0" max="1" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label for="chunkSize">文档块大小</label>
+                        <input type="number" id="chunkSize" value="300" min="100" max="1000">
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>系统信息</h4>
+                    <div class="system-info">
+                        <div class="info-item">
+                            <span class="info-label">Java版本:</span>
+                            <span class="info-value" id="javaVersion">8</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Spring Boot版本:</span>
+                            <span class="info-value" id="springBootVersion">2.7.18</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">LangChain4j版本:</span>
+                            <span class="info-value" id="langchain4jVersion">0.29.1</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">系统状态:</span>
+                            <span class="info-value" id="systemStatus">正常</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="btn btn-primary" id="saveSettings">保存设置</button>
+                    <button class="btn btn-secondary" id="resetSettings">重置设置</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- 模态框 -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>上传文档</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="upload-form">
+                <input type="file" id="modalFileInput" multiple accept=".pdf,.txt,.doc,.docx,.md,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp">
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span class="progress-text" id="progressText">0%</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelUpload">取消</button>
+            <button class="btn btn-primary" id="confirmUpload">上传</button>
+        </div>
+    </div>
+</div>
+
+<!-- 通知容器 -->
+<div class="notifications" id="notifications"></div>
+
+<!-- 法律声明模态框 -->
+<div class="modal" id="legalDisclaimerModal">
+    <div class="modal-content legal-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-gavel"></i> 法律声明与免责条款</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="legal-content">
+                <div class="legal-section">
+                    <h4><i class="fas fa-exclamation-triangle"></i> 重要声明</h4>
+                    <p>本平台（股神投资知识平台）仅作为投资知识库和智能问答平台，<strong>不接入任何证券交易系统</strong>，不提供任何形式的证券交易服务。</p>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-shield-alt"></i> 免责条款</h4>
+                    <ul>
+                        <li><strong>非投资建议：</strong>本平台提供的所有信息、分析、建议仅供参考，不构成任何投资建议或买卖指导。</li>
+                        <li><strong>风险自担：</strong>用户基于本平台信息做出的任何投资决策，其风险完全由用户自行承担。</li>
+                        <li><strong>数据准确性：</strong>本平台不保证所提供数据的准确性、完整性和及时性。</li>
+                        <li><strong>技术风险：</strong>AI选股和交易模拟功能仅供学习研究，不构成实际投资建议。</li>
+                        <li><strong>合规要求：</strong>用户应遵守相关法律法规，不得将本平台用于非法用途。</li>
+                    </ul>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-info-circle"></i> 使用须知</h4>
+                    <ul>
+                        <li>本平台仅供投资知识学习和研究使用</li>
+                        <li>所有模拟交易功能均为虚拟环境，不涉及真实资金</li>
+                        <li>用户应结合自身情况谨慎决策，必要时咨询专业投资顾问</li>
+                        <li>平台保留随时修改或终止服务的权利</li>
+                    </ul>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-balance-scale"></i> 法律适用</h4>
+                    <p>本声明的解释和执行均适用中华人民共和国法律。如发生争议，应通过友好协商解决；协商不成的，提交有管辖权的人民法院解决。</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="declineLegal">不同意</button>
+            <button class="btn btn-primary" id="acceptLegal">我已阅读并同意</button>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="js/app.js"></script>
+<script src="js/stock-app.js"></script>
+</body>
+</html>

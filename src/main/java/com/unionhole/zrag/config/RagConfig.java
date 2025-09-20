@@ -32,8 +32,10 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import com.unionhole.zrag.store.InMemoryEmbeddingStore;
 import com.unionhole.zrag.store.MilvusEmbeddingStore;
+import com.unionhole.zrag.store.WeaviateEmbeddingStore;
 import com.unionhole.zrag.model.QwenChatModel;
 import com.unionhole.zrag.model.QwenEmbeddingModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -164,14 +166,26 @@ public class RagConfig {
      * 根据配置选择不同的向量存储
      */
     @Bean
-    public EmbeddingStore<TextSegment> embeddingStore(MilvusEmbeddingStore milvusEmbeddingStore) {
+    public EmbeddingStore<TextSegment> embeddingStore(@Autowired(required = false) MilvusEmbeddingStore milvusEmbeddingStore,
+                                                     @Autowired(required = false) WeaviateEmbeddingStore weaviateEmbeddingStore) {
         switch (vectorStoreType.toLowerCase()) {
             case "milvus":
-                return milvusEmbeddingStore;
+                if (milvusEmbeddingStore != null) {
+                    return milvusEmbeddingStore;
+                }
+                break;
+            case "weaviate":
+                if (weaviateEmbeddingStore != null) {
+                    return weaviateEmbeddingStore;
+                }
+                break;
             case "memory":
             default:
                 return new InMemoryEmbeddingStore();
         }
+        
+        // 如果指定的存储类型不可用，回退到内存存储
+        return new InMemoryEmbeddingStore();
     }
 
     /**
@@ -190,10 +204,39 @@ public class RagConfig {
 
     /**
      * 配置文档分割器
+     * 支持自定义分隔符和分割规则
      */
     @Bean
     public DocumentSplitter documentSplitter() {
-        return DocumentSplitters.recursive(300, 0);
+        // 使用递归分割器，可以自定义分隔符
+        return DocumentSplitters.recursive(
+            300,  // 最大块大小
+            50    // 块之间重叠字符数
+        );
+    }
+    
+    /**
+     * 配置中文文档分割器
+     * 专门针对中文文档优化的分割器
+     */
+    @Bean("chineseDocumentSplitter")
+    public DocumentSplitter chineseDocumentSplitter() {
+        return DocumentSplitters.recursive(
+            500,  // 中文文档可以设置更大的块大小
+            100   // 增加重叠以提高上下文连续性
+        );
+    }
+    
+    /**
+     * 配置代码文档分割器
+     * 专门针对代码文档的分割器
+     */
+    @Bean("codeDocumentSplitter")
+    public DocumentSplitter codeDocumentSplitter() {
+        return DocumentSplitters.recursive(
+            1000, // 代码文档可以设置更大的块大小
+            200   // 增加重叠以保持代码上下文
+        );
     }
 
     /**

@@ -47,7 +47,15 @@ public class WebController {
      */
     @GetMapping("/")
     public String index() {
-        return "index";
+        return "forward:/index.html";
+    }
+    
+    /**
+     * 直接访问index.html
+     */
+    @GetMapping("/index.html")
+    public String indexHtml() {
+        return "forward:/index.html";
     }
 
     /**

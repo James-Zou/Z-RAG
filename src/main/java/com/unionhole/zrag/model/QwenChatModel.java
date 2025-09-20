@@ -70,25 +70,25 @@ public class QwenChatModel implements ChatLanguageModel {
             }
 
             // 构建请求
-            String url = baseUrl + "/services/aigc/text-generation/generation";
+            String url = baseUrl + "/chat/completions";
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.set("Authorization", "Bearer " + apiKey);
 
+            // 使用OpenAI兼容的请求格式
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", model);
-            Map<String, Object> input = new HashMap<>();
-            Map<String, Object> message = new HashMap<>();
+            
+            List<Map<String, String>> messages = new java.util.ArrayList<>();
+            Map<String, String> message = new HashMap<>();
             message.put("role", "user");
             message.put("content", userMessage);
-            input.put("messages", new Object[]{message});
-            requestBody.put("input", input);
+            messages.add(message);
+            requestBody.put("messages", messages);
             
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("temperature", 0.7);
-            parameters.put("max_tokens", 2000);
-            requestBody.put("parameters", parameters);
+            requestBody.put("temperature", 0.7);
+            requestBody.put("max_tokens", 2000);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
@@ -97,11 +97,16 @@ public class QwenChatModel implements ChatLanguageModel {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
                 
-                if (output != null && output.containsKey("text")) {
-                    String answer = (String) output.get("text");
-                    return Response.from(answer);
+                if (choices != null && !choices.isEmpty()) {
+                    Map<String, Object> firstChoice = choices.get(0);
+                    Map<String, Object> responseMessage = (Map<String, Object>) firstChoice.get("message");
+                    
+                    if (responseMessage != null && responseMessage.containsKey("content")) {
+                        String answer = (String) responseMessage.get("content");
+                        return Response.from(answer);
+                    }
                 }
             }
 
@@ -122,7 +127,7 @@ public class QwenChatModel implements ChatLanguageModel {
             }
 
             // 构建请求
-            String url = baseUrl + "/services/aigc/text-generation/generation";
+            String url = baseUrl + "/chat/completions";
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -152,11 +157,16 @@ public class QwenChatModel implements ChatLanguageModel {
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> responseBody = response.getBody();
-                Map<String, Object> output = (Map<String, Object>) responseBody.get("output");
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
                 
-                if (output != null && output.containsKey("text")) {
-                    String answer = (String) output.get("text");
-                    return Response.from(answer);
+                if (choices != null && !choices.isEmpty()) {
+                    Map<String, Object> firstChoice = choices.get(0);
+                    Map<String, Object> responseMessage = (Map<String, Object>) firstChoice.get("message");
+                    
+                    if (responseMessage != null && responseMessage.containsKey("content")) {
+                        String answer = (String) responseMessage.get("content");
+                        return Response.from(answer);
+                    }
                 }
             }
 

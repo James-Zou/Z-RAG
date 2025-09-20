@@ -10,22 +10,28 @@
     </formats>
     
     <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>zrag-${project.version}</baseDirectory>
     
     <fileSets>
-        <!-- 应用程序JAR文件 -->
+        <!-- 主应用程序JAR文件到lib目录 -->
         <fileSet>
             <directory>target</directory>
             <outputDirectory>lib</outputDirectory>
             <includes>
-                <include>*.jar</include>
+                <include>ZRAG-${project.version}.jar</include>
             </includes>
-            <excludes>
-                <exclude>*-sources.jar</exclude>
-                <exclude>*-javadoc.jar</exclude>
-            </excludes>
         </fileSet>
         
-        <!-- 配置文件 -->
+        <!-- 依赖JAR文件到lib目录（由dependency插件复制） -->
+        <fileSet>
+            <directory>target/lib</directory>
+            <outputDirectory>lib</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+        
+        <!-- 配置文件到config目录 -->
         <fileSet>
             <directory>src/main/resources</directory>
             <outputDirectory>config</outputDirectory>
@@ -33,10 +39,11 @@
                 <include>application.yml</include>
                 <include>application-*.yml</include>
                 <include>*.properties</include>
+                <include>log4j2.xml</include>
             </includes>
         </fileSet>
         
-        <!-- 示例文档 -->
+        <!-- 示例文档到config目录 -->
         <fileSet>
             <directory>src/main/resources</directory>
             <outputDirectory>config</outputDirectory>
@@ -45,50 +52,95 @@
             </includes>
         </fileSet>
         
-        <!-- 启动脚本 -->
+        <!-- 静态资源文件到web目录 -->
         <fileSet>
-            <directory>.</directory>
+            <directory>src/main/resources/static</directory>
+            <outputDirectory>web</outputDirectory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+        </fileSet>
+        
+        <!-- 启动脚本到bin目录 -->
+        <fileSet>
+            <directory>script</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
-                <include>start*.sh</include>
+                <include>start.sh</include>
+                <include>start-with-minio.sh</include>
                 <include>test-rag.sh</include>
+                <include>test-stream.sh</include>
             </includes>
             <fileMode>755</fileMode>
         </fileSet>
         
-        <!-- 文档文件 -->
+        <!-- 服务管理脚本到bin目录 -->
         <fileSet>
-            <directory>.</directory>
+            <directory>target/scripts</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>zrag</include>
+                <include>zrag.service</include>
+                <include>install.sh</include>
+                <include>uninstall.sh</include>
+                <include>test-java-version.sh</include>
+            </includes>
+            <fileMode>755</fileMode>
+        </fileSet>
+        
+        <!-- 文档文件到docs目录 -->
+        <fileSet>
+            <directory>docs</directory>
             <outputDirectory>docs</outputDirectory>
             <includes>
-                <include>README.md</include>
-                <include>LICENSE</include>
-                <include>NOTICE</include>
-                <include>CONTRIBUTING.md</include>
-                <include>CHANGELOG.md</include>
-                <include>*.md</include>
+                <include>**/*.md</include>
             </includes>
         </fileSet>
         
-        <!-- Maven配置文件 -->
-        <fileSet>
-            <directory>.</directory>
-            <outputDirectory>config</outputDirectory>
-            <includes>
-                <include>maven-settings.xml</include>
-            </includes>
-        </fileSet>
-        <!-- 创建目录结构 -->
+        <!-- 根目录文档 -->
         <fileSet>
             <directory>.</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>logs/</include>
-                <include>storage/</include>
-                <include>minio-data/</include>
+                <include>README.md</include>
+                <include>LICENSE</include>
+                <include>NOTICE</include>
+            </includes>
+        </fileSet>
+        
+        <!-- 创建logs目录 -->
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>logs</outputDirectory>
+            <includes>
+                <include>README.md</include>
             </includes>
             <excludes>
-                <exclude>**/*</exclude>
+                <exclude>README.md</exclude>
+            </excludes>
+        </fileSet>
+        
+        <!-- 创建data目录用于存储数据 -->
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>data</outputDirectory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+            <excludes>
+                <exclude>README.md</exclude>
+            </excludes>
+        </fileSet>
+        
+        <!-- 创建temp目录用于临时文件 -->
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>temp</outputDirectory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+            <excludes>
+                <exclude>README.md</exclude>
             </excludes>
         </fileSet>
     </fileSets>

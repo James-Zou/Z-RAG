@@ -24,6 +24,7 @@ import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -34,9 +35,10 @@ import java.util.*;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "vector-store.type", havingValue = "weaviate")
 public class WeaviateLLMUtils {
 
-    @Autowired
+    @Autowired(required = false)
     private WeaviateClient weaviateClient;
 
     /**
