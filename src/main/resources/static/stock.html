@@ -68,7 +68,7 @@
                     <span>知识管理</span>
                 </li>
                 <li class="nav-item" data-tab="zr-training">
-                    <i class="fas fa-brain"></i>
+                    <i class="fas fa-coins"></i>
                     <span>Z-R模型训练</span>
                 </li>
                 <li class="nav-item" data-tab="settings">
@@ -600,7 +600,7 @@
                     </div>
                     <div class="knowledge-card">
                         <div class="card-icon">
-                            <i class="fas fa-brain"></i>
+                            <i class="fas fa-dollar-sign"></i>
                         </div>
                         <h5>投资心理</h5>
                         <p>培养正确的投资心态，避免情绪化交易</p>
@@ -734,7 +734,7 @@
         <!-- Z-R模型训练页面 -->
         <div class="tab-content" id="zr-training">
             <div class="page-header">
-                <h3><i class="fas fa-brain"></i> Z-R模型训练</h3>
+                <h3><i class="fas fa-coins"></i> Z-R模型训练</h3>
                 <div class="page-actions">
                     <button class="btn btn-primary" id="startTraining">
                         <i class="fas fa-play"></i> 开始训练
@@ -803,58 +803,129 @@
                     <div class="input-form">
                         <div class="form-row">
                             <div class="form-group">
-                                <label>股票代码</label>
-                                <input type="text" id="stockCode" placeholder="如：000001" class="form-input">
+                                <label for="stockCode">股票代码 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="stockCode" name="stockCode" placeholder="如：000001" 
+                                           class="form-input" required pattern="[0-9]{6}" 
+                                           data-validate="stockCode" maxlength="6">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="stockCode-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>股票名称</label>
-                                <input type="text" id="stockName" placeholder="如：平安银行" class="form-input">
+                                <label for="stockName">股票名称 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="stockName" name="stockName" placeholder="如：平安银行" 
+                                           class="form-input" required minlength="2" maxlength="20"
+                                           data-validate="stockName">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="stockName-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>操作类型</label>
-                                <select id="operationType" class="form-select">
-                                    <option value="buy">买入</option>
-                                    <option value="sell">卖出</option>
-                                    <option value="hold">持有</option>
-                                </select>
+                                <label for="operationType">操作类型 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <select id="operationType" name="operationType" class="form-select" required>
+                                        <option value="">请选择操作类型</option>
+                                        <option value="buy">买入</option>
+                                        <option value="sell">卖出</option>
+                                        <option value="hold">持有</option>
+                                    </select>
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="operationType-error"></div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>股票单价</label>
-                                <input type="number" id="stockPrice" placeholder="如：12.45" step="0.01" class="form-input">
+                                <label for="stockPrice">股票单价 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="stockPrice" name="stockPrice" placeholder="如：12.45" 
+                                           step="0.01" min="0.01" max="9999.99" class="form-input" required
+                                           data-validate="stockPrice">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="stockPrice-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>数量</label>
-                                <input type="number" id="quantity" placeholder="如：1000" class="form-input">
+                                <label for="quantity">数量 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="quantity" name="quantity" placeholder="如：1000" 
+                                           min="1" max="999999" class="form-input" required
+                                           data-validate="quantity">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="quantity-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>操作时间</label>
-                                <input type="datetime-local" id="operationTime" class="form-input">
+                                <label for="operationTime">操作时间 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <input type="datetime-local" id="operationTime" name="operationTime" 
+                                           class="form-input" required data-validate="operationTime">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="operationTime-error"></div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>盈亏状况</label>
-                                <input type="number" id="profitLoss" placeholder="如：1250.50" step="0.01" class="form-input">
+                                <label for="profitLoss">盈亏状况</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="profitLoss" name="profitLoss" placeholder="如：1250.50" 
+                                           step="0.01" min="-999999.99" max="999999.99" class="form-input"
+                                           data-validate="profitLoss">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="profitLoss-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>盈亏比例</label>
-                                <input type="number" id="profitLossRatio" placeholder="如：10.5" step="0.01" class="form-input">
+                                <label for="profitLossRatio">盈亏比例 (%)</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="profitLossRatio" name="profitLossRatio" placeholder="如：10.5" 
+                                           step="0.01" min="-999.99" max="999.99" class="form-input"
+                                           data-validate="profitLossRatio">
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="profitLossRatio-error"></div>
                             </div>
                             <div class="form-group">
-                                <label>市场环境</label>
-                                <select id="marketEnvironment" class="form-select">
-                                    <option value="bull">牛市</option>
-                                    <option value="bear">熊市</option>
-                                    <option value="sideways">震荡市</option>
-                                </select>
+                                <label for="marketEnvironment">市场环境 <span class="required">*</span></label>
+                                <div class="input-wrapper">
+                                    <select id="marketEnvironment" name="marketEnvironment" class="form-select" required>
+                                        <option value="">请选择市场环境</option>
+                                        <option value="bull">牛市</option>
+                                        <option value="bear">熊市</option>
+                                        <option value="sideways">震荡市</option>
+                                    </select>
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="error-message" id="marketEnvironment-error"></div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group full-width">
-                                <label>操作策略描述</label>
-                                <textarea id="strategyDescription" placeholder="描述本次操作的投资策略、技术分析依据等..." rows="3" class="form-input"></textarea>
+                                <label for="strategyDescription">操作策略描述</label>
+                                <div class="input-wrapper">
+                                    <textarea id="strategyDescription" name="strategyDescription" 
+                                              placeholder="描述本次操作的投资策略、技术分析依据等..." 
+                                              rows="3" maxlength="500" class="form-input"
+                                              data-validate="strategyDescription"></textarea>
+                                    <i class="fas fa-check-circle input-success"></i>
+                                    <i class="fas fa-exclamation-circle input-error"></i>
+                                </div>
+                                <div class="char-counter">
+                                    <span id="strategyDescription-counter">0</span>/500
+                                </div>
+                                <div class="error-message" id="strategyDescription-error"></div>
                             </div>
                         </div>
                         <div class="form-actions">
@@ -970,7 +1041,7 @@
                 
                 <div class="config-grid">
                     <div class="config-group">
-                        <label>训练算法</label>
+                        <label class="tooltip-label" data-tooltip="选择深度学习模型架构：Transformer(注意力机制)、LSTM(长短期记忆)、GRU(门控循环单元)、CNN(卷积神经网络)">训练算法 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <select id="trainingAlgorithm" class="form-select">
                             <option value="transformer">Transformer</option>
                             <option value="lstm">LSTM</option>
@@ -979,23 +1050,23 @@
                         </select>
                     </div>
                     <div class="config-group">
-                        <label>学习率</label>
+                        <label class="tooltip-label" data-tooltip="控制模型参数更新的步长，影响训练速度和收敛性。值越大学习越快但可能不稳定，值越小学习越稳定但速度慢">学习率 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <input type="number" id="learningRate" value="0.001" step="0.0001" min="0.0001" max="0.1" class="form-input">
                     </div>
                     <div class="config-group">
-                        <label>批次大小</label>
+                        <label class="tooltip-label" data-tooltip="每次训练迭代使用的样本数量，影响训练稳定性和内存使用。较大的批次通常更稳定但需要更多内存">批次大小 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <input type="number" id="batchSize" value="32" min="1" max="256" class="form-input">
                     </div>
                     <div class="config-group">
-                        <label>训练轮数</label>
+                        <label class="tooltip-label" data-tooltip="模型遍历整个训练数据集的次数，影响模型学习程度。轮数太少可能欠拟合，太多可能过拟合">训练轮数 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <input type="number" id="epochs" value="100" min="1" max="1000" class="form-input">
                     </div>
                     <div class="config-group">
-                        <label>验证集比例</label>
+                        <label class="tooltip-label" data-tooltip="用于验证模型性能的数据比例，帮助监控训练过程并防止过拟合。通常设置为20%">验证集比例 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <input type="number" id="validationSplit" value="0.2" step="0.1" min="0.1" max="0.5" class="form-input">
                     </div>
                     <div class="config-group">
-                        <label>早停耐心值</label>
+                        <label class="tooltip-label" data-tooltip="连续多少轮验证性能无改善时停止训练，防止过拟合。值越大训练时间越长但可能获得更好效果">早停耐心值 <i class="fas fa-question-circle tooltip-icon"></i></label>
                         <input type="number" id="earlyStoppingPatience" value="10" min="1" max="50" class="form-input">
                     </div>
                 </div>
@@ -1019,13 +1090,13 @@
                         <div class="chart-container" id="lossChart" style="height: 400px;"></div>
                     </div>
                     <div class="viz-tab" id="accuracy">
-                        <div class="chart-container" id="accuracyChart" style="height: 400px;"></div>
+                        <div class="chart-container" id="accuracyChart" style="height: 500px;"></div>
                     </div>
                     <div class="viz-tab" id="prediction">
-                        <div class="chart-container" id="predictionChart" style="height: 400px;"></div>
+                        <div class="chart-container" id="predictionChart" style="height: 500px;"></div>
                     </div>
                     <div class="viz-tab" id="feature">
-                        <div class="chart-container" id="featureChart" style="height: 400px;"></div>
+                        <div class="chart-container" id="featureChart" style="height: 500px;"></div>
                     </div>
                 </div>
             </div>
@@ -1076,6 +1147,14 @@
                 </div>
                 
                 <div class="evaluation-charts">
+                    <div class="chart-controls" style="margin-bottom: 20px; text-align: center;">
+                        <button class="btn btn-primary" id="debugInitCharts" style="margin-right: 10px;">
+                            <i class="fas fa-chart-bar"></i> 初始化图表
+                        </button>
+                        <button class="btn btn-secondary" id="refreshCharts">
+                            <i class="fas fa-sync-alt"></i> 刷新图表
+                        </button>
+                    </div>
                     <div class="chart-row">
                         <div class="chart-item">
                             <h5>混淆矩阵</h5>
@@ -1240,9 +1319,81 @@
     </div>
 </div>
 
+<!-- Z-R模型使用声明模态框 -->
+<div class="modal" id="zrModelDisclaimerModal">
+    <div class="modal-content legal-modal">
+        <div class="modal-header">
+            <h3><i class="fas fa-robot"></i> Z-R模型使用声明</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="legal-content">
+                <div class="legal-section">
+                    <h4><i class="fas fa-exclamation-triangle"></i> 模型说明</h4>
+                    <p>本模型是基于用户操盘行为进行NLP训练的本地模型，选用本模型后将基于您的操盘行为和训练数据给出建议。</p>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-shield-alt"></i> 重要风险提示</h4>
+                    <ul>
+                        <li><strong>投资有风险，决策需谨慎</strong> - 任何投资都存在亏损风险</li>
+                        <li>模型建议仅供参考，不构成投资建议</li>
+                        <li>过往表现不代表未来收益</li>
+                        <li>请根据自身风险承受能力做出投资决策</li>
+                        <li>建议在专业投资顾问指导下使用</li>
+                    </ul>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-info-circle"></i> 使用须知</h4>
+                    <ul>
+                        <li>模型基于历史数据训练，可能无法预测未来市场变化</li>
+                        <li>市场环境变化可能影响模型效果</li>
+                        <li>请结合多种分析方法进行投资决策</li>
+                        <li>定期评估和调整投资策略</li>
+                    </ul>
+                </div>
+                
+                <div class="legal-section">
+                    <h4><i class="fas fa-lock"></i> 数据隐私</h4>
+                    <p>您的操盘数据仅用于本地模型训练，不会上传到外部服务器，确保数据安全和隐私保护。</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="declineZRModel">取消使用</button>
+            <button class="btn btn-primary" id="acceptZRModel">我已了解并同意使用</button>
+        </div>
+    </div>
+</div>
+
 
 
 <script src="js/app.js"></script>
 <script src="js/stock-app.js"></script>
+<script>
+// 页面加载完成后立即初始化图表
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载完成，开始初始化图表...');
+    
+    // 等待ECharts加载
+    setTimeout(function() {
+        if (typeof echarts !== 'undefined' && window.stockApp) {
+            console.log('ECharts已加载，开始初始化评估图表...');
+            window.stockApp.initConfusionMatrixChartDirect();
+            window.stockApp.initROCChartDirect();
+        } else {
+            console.log('ECharts或stockApp未准备好，等待...');
+            // 再次尝试
+            setTimeout(function() {
+                if (typeof echarts !== 'undefined' && window.stockApp) {
+                    window.stockApp.initConfusionMatrixChartDirect();
+                    window.stockApp.initROCChartDirect();
+                }
+            }, 2000);
+        }
+    }, 2000);
+});
+</script>
 </body>
 </html>

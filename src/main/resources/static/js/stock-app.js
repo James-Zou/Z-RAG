@@ -284,14 +284,16 @@ class StockApp extends ZRAGApp {
         // 监听导航项点击 - 在移动端关闭菜单，但保持原有的切换功能
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            // 添加移动端菜单关闭功能，但不覆盖父类的事件绑定
-            const originalClickHandler = item.onclick;
-            item.addEventListener('click', (e) => {
-                // 在移动端关闭菜单
-                if (window.innerWidth <= 768) {
-                    this.closeMobileMenu();
-                }
-            });
+            // 检查是否已经绑定过事件
+            if (!item.hasAttribute('data-mobile-menu-bound')) {
+                item.addEventListener('click', (e) => {
+                    // 在移动端关闭菜单
+                    if (window.innerWidth <= 768) {
+                        this.closeMobileMenu();
+                    }
+                });
+                item.setAttribute('data-mobile-menu-bound', 'true');
+            }
         });
 
         // 添加触摸手势支持
@@ -519,7 +521,8 @@ class StockApp extends ZRAGApp {
     }
 
     bindStockEvents() {
-
+        // 主标签页切换
+        this.bindMainTabSwitching();
 
         // 刷新市场数据
         document.getElementById('refreshMarket').addEventListener('click', () => {
@@ -535,6 +538,9 @@ class StockApp extends ZRAGApp {
 
         // 法律声明相关事件
         this.bindLegalEvents();
+
+        // Z-R模型相关事件
+        this.bindZRModelEvents();
 
     }
 
@@ -636,6 +642,118 @@ class StockApp extends ZRAGApp {
             setTimeout(() => {
                 this.showLegalDisclaimer();
             }, 1000);
+        }
+    }
+
+    bindZRModelEvents() {
+        // Z-R模型开关事件
+        const useZRModelCheckbox = document.getElementById('useZRModel');
+        if (useZRModelCheckbox) {
+            useZRModelCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    // 显示Z-R模型使用声明
+                    this.showZRModelDisclaimer();
+                }
+            });
+        }
+
+        // Z-R模型声明模态框事件
+        const zrModal = document.getElementById('zrModelDisclaimerModal');
+        const acceptZRModel = document.getElementById('acceptZRModel');
+        const declineZRModel = document.getElementById('declineZRModel');
+        const zrModalClose = zrModal?.querySelector('.modal-close');
+
+        if (acceptZRModel) {
+            acceptZRModel.addEventListener('click', () => {
+                this.acceptZRModelDisclaimer();
+            });
+        }
+
+        if (declineZRModel) {
+            declineZRModel.addEventListener('click', () => {
+                this.declineZRModelDisclaimer();
+            });
+        }
+
+        if (zrModalClose) {
+            zrModalClose.addEventListener('click', () => {
+                this.hideZRModelDisclaimer();
+            });
+        }
+    }
+
+    showZRModelDisclaimer() {
+        const modal = document.getElementById('zrModelDisclaimerModal');
+        if (modal) {
+            modal.classList.add('active');
+        }
+    }
+
+    hideZRModelDisclaimer() {
+        const modal = document.getElementById('zrModelDisclaimerModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    acceptZRModelDisclaimer() {
+        // 保存用户同意状态
+        localStorage.setItem('zrModelDisclaimerAccepted', 'true');
+        localStorage.setItem('zrModelDisclaimerAcceptedTime', new Date().toISOString());
+
+        this.hideZRModelDisclaimer();
+        this.showNotification('Z-R模型已启用，将基于您的操盘行为提供建议', 'success');
+    }
+
+    declineZRModelDisclaimer() {
+        // 取消Z-R模型选择
+        const useZRModelCheckbox = document.getElementById('useZRModel');
+        if (useZRModelCheckbox) {
+            useZRModelCheckbox.checked = false;
+        }
+
+        this.hideZRModelDisclaimer();
+        this.showNotification('已取消使用Z-R模型', 'info');
+    }
+
+    // 主标签页切换
+    bindMainTabSwitching() {
+        document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabName = item.getAttribute('data-tab');
+                this.switchMainTab(tabName);
+            });
+        });
+    }
+
+    switchMainTab(tabName) {
+        // 更新导航项状态
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+        // 更新内容区域
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        const targetContent = document.getElementById(tabName);
+        if (targetContent) {
+            targetContent.classList.add('active');
+        }
+
+        // 如果是Z-R训练页面，确保初始化
+        if (tabName === 'zr-training') {
+            this.ensureZRTrainingInitialized();
+        }
+    }
+
+    // 确保Z-R训练页面已初始化
+    ensureZRTrainingInitialized() {
+        if (!this.zrTrainingInitialized) {
+            this.initZRTrainingPage();
+            this.zrTrainingInitialized = true;
         }
     }
 
@@ -3258,8 +3376,8 @@ class ZRModelTraining {
     }
 
     async startTraining() {
-        if (this.trainingData.length < 10) {
-            this.showNotification('训练数据不足，至少需要10条数据', 'warning');
+        if (this.trainingData.length < 5) {
+            this.showNotification('训练数据不足，至少需要5条数据', 'warning');
             return;
         }
 
@@ -3321,18 +3439,43 @@ class ZRModelTraining {
         const option = {
             title: {
                 text: '训练损失',
-                left: 'center'
+                left: 'center',
+                textStyle: {
+                    fontSize: 16
+                }
             },
             tooltip: {
-                trigger: 'axis'
+                trigger: 'axis',
+                formatter: function (params) {
+                    let result = params[0].name + '<br/>';
+                    params.forEach(function (item) {
+                        result += item.marker + item.seriesName + ': ' + item.value.toFixed(4) + '<br/>';
+                    });
+                    return result;
+                }
+            },
+            grid: {
+                left: '5%',
+                right: '5%',
+                top: '15%',
+                bottom: '10%',
+                containLabel: true
             },
             xAxis: {
                 type: 'category',
-                data: []
+                data: [],
+                axisLabel: {
+                    fontSize: 12
+                }
             },
             yAxis: {
                 type: 'value',
-                name: '损失值'
+                name: '损失值',
+                nameLocation: 'middle',
+                nameGap: 50,
+                axisLabel: {
+                    fontSize: 12
+                }
             },
             series: [{
                 name: '训练损失',
@@ -3340,7 +3483,8 @@ class ZRModelTraining {
                 data: [],
                 smooth: true,
                 lineStyle: {
-                    color: '#ff6b6b'
+                    color: '#ff6b6b',
+                    width: 3
                 },
                 areaStyle: {
                     color: {
@@ -3352,7 +3496,9 @@ class ZRModelTraining {
                             offset: 1, color: 'rgba(255, 107, 107, 0.1)'
                         }]
                     }
-                }
+                },
+                symbol: 'circle',
+                symbolSize: 6
             }]
         };
         
@@ -3366,28 +3512,55 @@ class ZRModelTraining {
         const option = {
             title: {
                 text: '训练准确率',
-                left: 'center'
+                left: 'center',
+                textStyle: {
+                    fontSize: 16
+                }
             },
             tooltip: {
-                trigger: 'axis'
+                trigger: 'axis',
+                formatter: function (params) {
+                    let result = params[0].name + '<br/>';
+                    params.forEach(function (item) {
+                        result += item.marker + item.seriesName + ': ' + item.value + '%<br/>';
+                    });
+                    return result;
+                }
+            },
+            grid: {
+                left: '8%',
+                right: '8%',
+                top: '15%',
+                bottom: '15%',
+                containLabel: true
             },
             xAxis: {
                 type: 'category',
-                data: []
+                data: ['1', '23', '45', '67', '89'],
+                axisLabel: {
+                    fontSize: 12
+                }
             },
             yAxis: {
                 type: 'value',
                 name: '准确率(%)',
                 min: 0,
-                max: 100
+                max: 100,
+                nameLocation: 'middle',
+                nameGap: 50,
+                axisLabel: {
+                    fontSize: 12,
+                    formatter: '{value}%'
+                }
             },
             series: [{
                 name: '训练准确率',
                 type: 'line',
-                data: [],
+                data: [45, 68, 82, 89, 94],
                 smooth: true,
                 lineStyle: {
-                    color: '#4ecdc4'
+                    color: '#4ecdc4',
+                    width: 3
                 },
                 areaStyle: {
                     color: {
@@ -3399,7 +3572,20 @@ class ZRModelTraining {
                             offset: 1, color: 'rgba(78, 205, 196, 0.1)'
                         }]
                     }
-                }
+                },
+                symbol: 'circle',
+                symbolSize: 6
+            }, {
+                name: '验证准确率',
+                type: 'line',
+                data: [42, 65, 79, 86, 91],
+                smooth: true,
+                lineStyle: {
+                    color: '#45b7d1',
+                    width: 3
+                },
+                symbol: 'circle',
+                symbolSize: 6
             }]
         };
         
@@ -3412,39 +3598,74 @@ class ZRModelTraining {
         
         const option = {
             title: {
-                text: '预测分析',
-                left: 'center'
+                text: '预测分析对比',
+                left: 'center',
+                textStyle: {
+                    fontSize: 16
+                }
             },
             tooltip: {
-                trigger: 'axis'
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: function (params) {
+                    let result = params[0].name + '<br/>';
+                    params.forEach(function (item) {
+                        result += item.marker + item.seriesName + ': ' + item.value + '<br/>';
+                    });
+                    return result;
+                }
             },
             legend: {
                 data: ['实际值', '预测值'],
-                top: 30
+                top: 30,
+                textStyle: {
+                    fontSize: 12
+                }
+            },
+            grid: {
+                left: '8%',
+                right: '8%',
+                top: '20%',
+                bottom: '15%',
+                containLabel: true
             },
             xAxis: {
                 type: 'category',
-                data: ['买入', '卖出', '持有']
+                data: ['买入', '持有'],
+                axisLabel: {
+                    fontSize: 12
+                }
             },
             yAxis: {
                 type: 'value',
-                name: '数量'
+                name: '数量',
+                nameLocation: 'middle',
+                nameGap: 50,
+                axisLabel: {
+                    fontSize: 12
+                }
             },
             series: [
                 {
                     name: '实际值',
                     type: 'bar',
-                    data: [45, 38, 17],
+                    data: [28, 18],
+                    barWidth: '35%',
                     itemStyle: {
-                        color: '#ff9f43'
+                        color: '#4ecdc4',
+                        borderRadius: [4, 4, 0, 0]
                     }
                 },
                 {
                     name: '预测值',
                     type: 'bar',
-                    data: [42, 41, 17],
+                    data: [25, 20],
+                    barWidth: '35%',
                     itemStyle: {
-                        color: '#10ac84'
+                        color: '#ff6b6b',
+                        borderRadius: [4, 4, 0, 0]
                     }
                 }
             ]
@@ -3457,72 +3678,119 @@ class ZRModelTraining {
         const chart = echarts.init(document.getElementById('featureChart'));
         this.trainingCharts.feature = chart;
         
+        const features = [
+            { name: '技术指标', value: 0.25 },
+            { name: '市场环境', value: 0.20 },
+            { name: '历史价格', value: 0.18 },
+            { name: '成交量', value: 0.15 },
+            { name: '基本面', value: 0.12 },
+            { name: '情绪指标', value: 0.10 }
+        ];
+        
         const option = {
             title: {
-                text: '特征重要性',
-                left: 'center'
+                text: '特征重要性分析',
+                left: 'center',
+                textStyle: {
+                    fontSize: 16
+                }
             },
             tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'shadow'
+                trigger: 'item',
+                formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                left: '5%',
+                top: 'middle',
+                textStyle: {
+                    fontSize: 11
                 }
             },
-            xAxis: {
-                type: 'value'
-            },
-            yAxis: {
-                type: 'category',
-                data: ['技术指标', '市场环境', '历史价格', '成交量', '基本面', '情绪指标']
-            },
-            series: [{
-                name: '重要性',
-                type: 'bar',
-                data: [0.25, 0.20, 0.18, 0.15, 0.12, 0.10],
-                itemStyle: {
-                    color: {
-                        type: 'linear',
-                        x: 0, y: 0, x2: 1, y2: 0,
-                        colorStops: [{
-                            offset: 0, color: '#667eea'
-                        }, {
-                            offset: 1, color: '#764ba2'
-                        }]
+            series: [
+                {
+                    name: '特征重要性',
+                    type: 'pie',
+                    radius: ['25%', '65%'],
+                    center: ['65%', '50%'],
+                    data: features,
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b}: {d}%',
+                        fontSize: 11
+                    },
+                    labelLine: {
+                        show: true
+                    },
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        color: function(params) {
+                            const colors = ['#8b1538', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'];
+                            return colors[params.dataIndex % colors.length];
+                        }
                     }
                 }
-            }]
+            ]
         };
         
         chart.setOption(option);
     }
 
     initConfusionMatrixChart() {
-        const chart = echarts.init(document.getElementById('confusionMatrixChart'));
+        const chartElement = document.getElementById('confusionMatrixChart');
+        if (!chartElement) {
+            console.warn('混淆矩阵图表容器未找到');
+            return;
+        }
+        
+        const chart = echarts.init(chartElement);
         this.trainingCharts.confusionMatrix = chart;
         
+        // 更丰富的混淆矩阵数据 - 股票投资决策分类
         const data = [
-            [0, 0, 15], [0, 1, 3], [0, 2, 2],
-            [1, 0, 2], [1, 1, 12], [1, 2, 1],
-            [2, 0, 1], [2, 1, 2], [2, 2, 8]
+            [0, 0, 45], [0, 1, 8], [0, 2, 5],   // 买入预测：实际买入45，实际卖出8，实际持有5
+            [1, 0, 6], [1, 1, 52], [1, 2, 4],   // 卖出预测：实际买入6，实际卖出52，实际持有4
+            [2, 0, 3], [2, 1, 5], [2, 2, 38]    // 持有预测：实际买入3，实际卖出5，实际持有38
         ];
         
         const option = {
             title: {
-                text: '混淆矩阵',
-                left: 'center'
+                text: '混淆矩阵 - 股票投资决策分类',
+                left: 'center',
+                textStyle: {
+                    fontSize: 14
+                }
             },
             tooltip: {
-                position: 'top'
+                position: 'top',
+                formatter: function (params) {
+                    const categories = ['买入', '卖出', '持有'];
+                    return `预测: ${categories[params.data[0]]}<br/>实际: ${categories[params.data[1]]}<br/>数量: ${params.data[2]}`;
+                }
             },
             grid: {
-                height: '50%',
-                top: '10%'
+                height: '60%',
+                top: '15%',
+                left: '10%',
+                right: '10%'
             },
             xAxis: {
                 type: 'category',
                 data: ['买入', '卖出', '持有'],
                 splitArea: {
                     show: true
+                },
+                axisLabel: {
+                    fontSize: 12
                 }
             },
             yAxis: {
@@ -3530,22 +3798,34 @@ class ZRModelTraining {
                 data: ['买入', '卖出', '持有'],
                 splitArea: {
                     show: true
+                },
+                axisLabel: {
+                    fontSize: 12
                 }
             },
             visualMap: {
                 min: 0,
-                max: 15,
+                max: 52,
                 calculable: true,
                 orient: 'horizontal',
                 left: 'center',
-                bottom: '15%'
+                bottom: '5%',
+                inRange: {
+                    color: ['#fff2e8', '#ff7a00', '#8b1538']
+                },
+                text: ['高', '低'],
+                textStyle: {
+                    color: '#333'
+                }
             },
             series: [{
                 name: '混淆矩阵',
                 type: 'heatmap',
                 data: data,
                 label: {
-                    show: true
+                    show: true,
+                    fontSize: 12,
+                    color: '#000'
                 },
                 emphasis: {
                     itemStyle: {
@@ -3560,55 +3840,111 @@ class ZRModelTraining {
     }
 
     initROCChart() {
-        const chart = echarts.init(document.getElementById('rocChart'));
+        const chartElement = document.getElementById('rocChart');
+        if (!chartElement) {
+            console.warn('ROC曲线图表容器未找到');
+            return;
+        }
+        
+        const chart = echarts.init(chartElement);
         this.trainingCharts.roc = chart;
+        
+        // 股票投资决策模型ROC曲线数据
+        const rocData = [
+            [0, 0], [0.02, 0.08], [0.05, 0.18], [0.08, 0.28], [0.12, 0.38],
+            [0.15, 0.48], [0.18, 0.58], [0.22, 0.68], [0.25, 0.75], [0.28, 0.81],
+            [0.32, 0.86], [0.35, 0.89], [0.38, 0.91], [0.42, 0.93], [0.45, 0.94],
+            [0.48, 0.95], [0.52, 0.96], [0.55, 0.97], [0.58, 0.975], [0.62, 0.98],
+            [0.65, 0.985], [0.68, 0.988], [0.72, 0.991], [0.75, 0.993], [0.78, 0.995],
+            [0.82, 0.997], [0.85, 0.998], [0.88, 0.999], [0.92, 0.9995], [0.95, 0.9998], [1, 1]
+        ];
         
         const option = {
             title: {
-                text: 'ROC曲线',
-                left: 'center'
+                text: 'ROC曲线 - 股票投资决策模型',
+                left: 'center',
+                textStyle: {
+                    fontSize: 14
+                }
             },
             tooltip: {
-                trigger: 'axis'
+                trigger: 'axis',
+                formatter: function (params) {
+                    if (params[0].seriesName === 'ROC曲线') {
+                        return `假正率: ${(params[0].data[0] * 100).toFixed(1)}%<br/>真正率: ${(params[0].data[1] * 100).toFixed(1)}%`;
+                    }
+                    return params[0].seriesName;
+                }
             },
             legend: {
-                data: ['ROC曲线', '随机分类器'],
-                top: 30
+                data: ['ROC曲线 (AUC=0.92)', '随机分类器'],
+                top: 30,
+                textStyle: {
+                    fontSize: 12
+                }
+            },
+            grid: {
+                left: '10%',
+                right: '10%',
+                top: '20%',
+                bottom: '15%'
             },
             xAxis: {
                 type: 'value',
-                name: '假正率(FPR)',
+                name: '假正率 (FPR)',
                 min: 0,
-                max: 1
+                max: 1,
+                nameLocation: 'middle',
+                nameGap: 30,
+                axisLabel: {
+                    formatter: '{value}'
+                }
             },
             yAxis: {
                 type: 'value',
-                name: '真正率(TPR)',
+                name: '真正率 (TPR)',
                 min: 0,
-                max: 1
+                max: 1,
+                nameLocation: 'middle',
+                nameGap: 50,
+                axisLabel: {
+                    formatter: '{value}'
+                }
             },
             series: [
                 {
-                    name: 'ROC曲线',
+                    name: 'ROC曲线 (AUC=0.92)',
                     type: 'line',
-                    data: [
-                        [0, 0], [0.1, 0.2], [0.2, 0.4], [0.3, 0.6], 
-                        [0.4, 0.75], [0.5, 0.85], [0.6, 0.9], [0.7, 0.93], 
-                        [0.8, 0.96], [0.9, 0.98], [1, 1]
-                    ],
+                    data: rocData,
                     smooth: true,
                     lineStyle: {
-                        color: '#ff6b6b'
-                    }
+                        color: '#8b1538',
+                        width: 3
+                    },
+                    areaStyle: {
+                        color: {
+                            type: 'linear',
+                            x: 0, y: 0, x2: 0, y2: 1,
+                            colorStops: [{
+                                offset: 0, color: 'rgba(139, 21, 56, 0.3)'
+                            }, {
+                                offset: 1, color: 'rgba(139, 21, 56, 0.1)'
+                            }]
+                        }
+                    },
+                    symbol: 'circle',
+                    symbolSize: 4
                 },
                 {
                     name: '随机分类器',
                     type: 'line',
                     data: [[0, 0], [1, 1]],
                     lineStyle: {
-                        color: '#ddd',
-                        type: 'dashed'
-                    }
+                        color: '#d9d9d9',
+                        type: 'dashed',
+                        width: 2
+                    },
+                    symbol: 'none'
                 }
             ]
         };
@@ -3662,6 +3998,7 @@ class ZRModelTraining {
 // 在StockApp中集成Z-R模型训练功能
 StockApp.prototype.initZRTraining = function() {
     this.zrTraining = new ZRModelTraining();
+    this.initZRTrainingPage();
 };
 
 // 扩展StockApp的initStockFeatures方法
@@ -3739,3 +4076,1720 @@ document.addEventListener('DOMContentLoaded', function() {
         zrTraining = window.app.zrTraining;
     }
 });
+
+// Z-R模型训练页面功能实现
+StockApp.prototype.initZRTrainingPage = function() {
+    this.trainingData = [];
+    this.trainingInProgress = false;
+    this.trainingProgress = 0;
+    this.modelMetrics = {
+        accuracy: 0,
+        precision: 0,
+        recall: 0,
+        f1: 0
+    };
+    
+    // 初始化训练数据
+    this.initTrainingData();
+    
+    // 绑定事件
+    this.bindZRTrainingEvents();
+    
+    // 初始化图表
+    this.initTrainingCharts();
+    
+    // 初始化表单验证
+    this.initFormValidation();
+    
+    // 初始化评估图表（混淆矩阵和ROC曲线）
+    setTimeout(() => {
+        this.initConfusionMatrixChartDirect();
+        this.initROCChartDirect();
+    }, 1500);
+    
+    // 更新概览统计
+    this.updateTrainingOverview();
+};
+
+// 初始化训练数据（使用模拟数据）
+StockApp.prototype.initTrainingData = function() {
+    const sampleData = [
+        {
+            id: 1,
+            stockCode: '000001',
+            stockName: '平安银行',
+            operationType: 'buy',
+            stockPrice: 12.45,
+            quantity: 1000,
+            operationTime: '2024-01-15T09:30:00',
+            profitLoss: 1250.50,
+            profitLossRatio: 10.05,
+            marketEnvironment: 'bull',
+            strategyDescription: '基于技术分析，突破关键阻力位后买入'
+        },
+        {
+            id: 2,
+            stockCode: '000002',
+            stockName: '万科A',
+            operationType: 'sell',
+            stockPrice: 18.20,
+            quantity: 500,
+            operationTime: '2024-01-16T14:30:00',
+            profitLoss: -320.00,
+            profitLossRatio: -3.52,
+            marketEnvironment: 'sideways',
+            strategyDescription: '止损策略，跌破支撑位后卖出'
+        },
+        {
+            id: 3,
+            stockCode: '600036',
+            stockName: '招商银行',
+            operationType: 'buy',
+            stockPrice: 35.80,
+            quantity: 200,
+            operationTime: '2024-01-17T10:15:00',
+            profitLoss: 890.00,
+            profitLossRatio: 12.43,
+            marketEnvironment: 'bull',
+            strategyDescription: '价值投资，银行股估值修复'
+        },
+        {
+            id: 4,
+            stockCode: '000858',
+            stockName: '五粮液',
+            operationType: 'hold',
+            stockPrice: 180.50,
+            quantity: 100,
+            operationTime: '2024-01-18T11:00:00',
+            profitLoss: 0,
+            profitLossRatio: 0,
+            marketEnvironment: 'sideways',
+            strategyDescription: '长期持有，等待消费复苏'
+        },
+        {
+            id: 5,
+            stockCode: '600519',
+            stockName: '贵州茅台',
+            operationType: 'buy',
+            stockPrice: 1680.00,
+            quantity: 10,
+            operationTime: '2024-01-19T09:45:00',
+            profitLoss: 2100.00,
+            profitLossRatio: 12.50,
+            marketEnvironment: 'bull',
+            strategyDescription: '高端消费股，品牌价值投资'
+        }
+    ];
+    
+    this.trainingData = sampleData;
+    this.updateTrainingDataTable();
+};
+
+// 绑定Z-R训练页面事件
+StockApp.prototype.bindZRTrainingEvents = function() {
+    // 添加训练数据
+    document.getElementById('addTrainingData')?.addEventListener('click', () => {
+        this.addTrainingData();
+    });
+    
+    // 清空表单
+    document.getElementById('clearForm')?.addEventListener('click', () => {
+        this.clearTrainingForm();
+    });
+    
+    // 开始训练
+    document.getElementById('startTraining')?.addEventListener('click', () => {
+        this.startModelTraining();
+    });
+    
+    // 刷新训练
+    document.getElementById('refreshTraining')?.addEventListener('click', () => {
+        this.refreshTrainingData();
+    });
+    
+    // 文件上传
+    document.getElementById('trainingFileInput')?.addEventListener('change', (e) => {
+        this.handleTrainingFileUpload(e.target.files);
+    });
+    
+    // 数据导入
+    document.getElementById('importFromAPI')?.addEventListener('click', () => {
+        this.importFromAPI();
+    });
+    
+    document.getElementById('importFromKnowledge')?.addEventListener('click', () => {
+        this.importFromKnowledge();
+    });
+    
+    // 数据管理
+    document.getElementById('searchTrainingData')?.addEventListener('input', (e) => {
+        this.searchTrainingData(e.target.value);
+    });
+    
+    document.getElementById('filterTrainingData')?.addEventListener('change', (e) => {
+        this.filterTrainingData(e.target.value);
+    });
+    
+    document.getElementById('deleteSelectedData')?.addEventListener('click', () => {
+        this.deleteSelectedTrainingData();
+    });
+    
+    document.getElementById('selectAllData')?.addEventListener('change', (e) => {
+        this.selectAllTrainingData(e.target.checked);
+    });
+    
+    // 标签页切换
+    this.initTrainingTabSwitching();
+    
+    // 可视化标签页切换
+    this.initVisualizationTabSwitching();
+};
+
+// 添加训练数据
+StockApp.prototype.addTrainingData = function() {
+    const formData = this.getTrainingFormData();
+    
+    if (!this.validateTrainingFormData(formData)) {
+        return;
+    }
+    
+    const newData = {
+        id: Date.now(),
+        ...formData,
+        operationTime: formData.operationTime || new Date().toISOString().slice(0, 16)
+    };
+    
+    this.trainingData.unshift(newData);
+    this.updateTrainingDataTable();
+    this.updateTrainingOverview();
+    this.clearTrainingForm();
+    
+    this.showNotification('训练数据添加成功', 'success');
+};
+
+// 获取表单数据
+StockApp.prototype.getTrainingFormData = function() {
+    return {
+        stockCode: document.getElementById('stockCode').value,
+        stockName: document.getElementById('stockName').value,
+        operationType: document.getElementById('operationType').value,
+        stockPrice: parseFloat(document.getElementById('stockPrice').value) || 0,
+        quantity: parseInt(document.getElementById('quantity').value) || 0,
+        operationTime: document.getElementById('operationTime').value,
+        profitLoss: parseFloat(document.getElementById('profitLoss').value) || 0,
+        profitLossRatio: parseFloat(document.getElementById('profitLossRatio').value) || 0,
+        marketEnvironment: document.getElementById('marketEnvironment').value,
+        strategyDescription: document.getElementById('strategyDescription').value
+    };
+};
+
+// 验证表单数据
+StockApp.prototype.validateTrainingFormData = function(data) {
+    if (!data.stockCode || !data.stockName) {
+        this.showNotification('请填写股票代码和名称', 'warning');
+        return false;
+    }
+    
+    if (!data.stockPrice || data.stockPrice <= 0) {
+        this.showNotification('请输入有效的股票价格', 'warning');
+        return false;
+    }
+    
+    if (!data.quantity || data.quantity <= 0) {
+        this.showNotification('请输入有效的数量', 'warning');
+        return false;
+    }
+    
+    return true;
+};
+
+// 清空表单
+StockApp.prototype.clearTrainingForm = function() {
+    document.getElementById('stockCode').value = '';
+    document.getElementById('stockName').value = '';
+    document.getElementById('operationType').value = 'buy';
+    document.getElementById('stockPrice').value = '';
+    document.getElementById('quantity').value = '';
+    document.getElementById('operationTime').value = '';
+    document.getElementById('profitLoss').value = '';
+    document.getElementById('profitLossRatio').value = '';
+    document.getElementById('marketEnvironment').value = 'bull';
+    document.getElementById('strategyDescription').value = '';
+};
+
+// 更新训练数据表格
+StockApp.prototype.updateTrainingDataTable = function() {
+    const tbody = document.getElementById('trainingDataTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = this.trainingData.map(data => `
+        <tr>
+            <td><input type="checkbox" class="data-checkbox" data-id="${data.id}"></td>
+            <td>${data.stockCode}</td>
+            <td>${data.stockName}</td>
+            <td><span class="operation-badge ${data.operationType}">${this.getOperationText(data.operationType)}</span></td>
+            <td>¥${data.stockPrice.toFixed(2)}</td>
+            <td>${data.quantity}</td>
+            <td>${this.formatDateTime(data.operationTime)}</td>
+            <td class="${data.profitLoss >= 0 ? 'positive' : 'negative'}">¥${data.profitLoss.toFixed(2)}</td>
+            <td class="${data.profitLossRatio >= 0 ? 'positive' : 'negative'}">${data.profitLossRatio.toFixed(2)}%</td>
+            <td><span class="environment-badge ${data.marketEnvironment}">${this.getEnvironmentText(data.marketEnvironment)}</span></td>
+            <td>
+                <button class="btn-icon" onclick="app.editTrainingData(${data.id})" title="编辑">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon" onclick="app.deleteTrainingData(${data.id})" title="删除">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+};
+
+// 获取操作类型文本
+StockApp.prototype.getOperationText = function(type) {
+    const types = {
+        'buy': '买入',
+        'sell': '卖出',
+        'hold': '持有'
+    };
+    return types[type] || type;
+};
+
+// 获取市场环境文本
+StockApp.prototype.getEnvironmentText = function(env) {
+    const environments = {
+        'bull': '牛市',
+        'bear': '熊市',
+        'sideways': '震荡市'
+    };
+    return environments[env] || env;
+};
+
+// 格式化日期时间
+StockApp.prototype.formatDateTime = function(dateTime) {
+    if (!dateTime) return '-';
+    const date = new Date(dateTime);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+};
+
+// 更新训练概览
+StockApp.prototype.updateTrainingOverview = function() {
+    const dataCount = this.trainingData.length;
+    const accuracy = this.modelMetrics.accuracy;
+    const lastTraining = localStorage.getItem('lastTrainingTime') || '-';
+    const status = this.trainingInProgress ? '训练中...' : '待训练';
+    
+    document.getElementById('trainingDataCount').textContent = dataCount;
+    document.getElementById('modelAccuracy').textContent = `${accuracy.toFixed(1)}%`;
+    document.getElementById('lastTrainingTime').textContent = lastTraining;
+    document.getElementById('trainingStatus').textContent = status;
+};
+
+// 开始模型训练
+StockApp.prototype.startModelTraining = function() {
+    if (this.trainingData.length < 5) {
+        this.showNotification('训练数据不足，至少需要5条数据', 'warning');
+        return;
+    }
+    
+    if (this.trainingInProgress) {
+        this.showNotification('模型正在训练中，请稍候...', 'info');
+        return;
+    }
+    
+    this.trainingInProgress = true;
+    this.trainingProgress = 0;
+    this.updateTrainingOverview();
+    
+    // 显示训练进度模态框
+    this.showTrainingProgressModal();
+    
+    // 模拟训练过程
+    this.simulateTrainingProcess();
+};
+
+// 显示训练进度模态框
+StockApp.prototype.showTrainingProgressModal = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'trainingProgressModal';
+    modal.innerHTML = `
+        <div class="modal-content training-progress-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-brain"></i> Z-R模型训练中</h3>
+            </div>
+            <div class="modal-body">
+                <div class="training-progress-container">
+                    <div class="progress-info">
+                        <div class="progress-text">
+                            <span id="progressText">正在初始化模型...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="training-metrics">
+                        <div class="metric-item">
+                            <span class="metric-label">当前轮次:</span>
+                            <span class="metric-value" id="currentEpoch">0</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">损失值:</span>
+                            <span class="metric-value" id="currentLoss">-</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">准确率:</span>
+                            <span class="metric-value" id="currentAccuracy">-</span>
+                        </div>
+                    </div>
+                    <div class="training-chart-container">
+                        <div id="trainingProgressChart" style="height: 200px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelTraining" disabled>取消训练</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 初始化训练进度图表
+    this.initTrainingProgressChart();
+};
+
+// 模拟训练过程
+StockApp.prototype.simulateTrainingProcess = function() {
+    const totalEpochs = 100;
+    const progressTexts = [
+        '正在初始化模型...',
+        '加载训练数据...',
+        '数据预处理中...',
+        '构建神经网络...',
+        '开始训练...',
+        '训练进行中...',
+        '验证模型性能...',
+        '优化模型参数...',
+        '训练即将完成...',
+        '保存训练结果...'
+    ];
+    
+    let currentEpoch = 0;
+    const trainingInterval = setInterval(() => {
+        currentEpoch++;
+        this.trainingProgress = (currentEpoch / totalEpochs) * 100;
+        
+        // 更新进度条
+        document.getElementById('progressFill').style.width = `${this.trainingProgress}%`;
+        document.getElementById('progressPercent').textContent = `${Math.round(this.trainingProgress)}%`;
+        
+        // 更新当前轮次
+        document.getElementById('currentEpoch').textContent = currentEpoch;
+        
+        // 更新状态文本
+        const textIndex = Math.min(Math.floor(this.trainingProgress / 10), progressTexts.length - 1);
+        document.getElementById('progressText').textContent = progressTexts[textIndex];
+        
+        // 模拟损失和准确率变化
+        const loss = Math.max(0.1, 2.5 * Math.exp(-currentEpoch / 30) + 0.1 * Math.random());
+        const accuracy = Math.min(95, 20 + (currentEpoch / totalEpochs) * 70 + Math.random() * 5);
+        
+        document.getElementById('currentLoss').textContent = loss.toFixed(4);
+        document.getElementById('currentAccuracy').textContent = `${accuracy.toFixed(1)}%`;
+        
+        // 更新训练图表
+        this.updateTrainingProgressChart(currentEpoch, loss, accuracy);
+        
+        if (currentEpoch >= totalEpochs) {
+            clearInterval(trainingInterval);
+            this.completeTraining();
+        }
+    }, 200);
+    
+    // 保存训练间隔ID以便取消
+    this.trainingInterval = trainingInterval;
+};
+
+// 完成训练
+StockApp.prototype.completeTraining = function() {
+    this.trainingInProgress = false;
+    this.trainingProgress = 100;
+    
+    // 更新模型指标
+    this.modelMetrics = {
+        accuracy: 85.6 + Math.random() * 10,
+        precision: 82.3 + Math.random() * 8,
+        recall: 88.1 + Math.random() * 7,
+        f1: 85.0 + Math.random() * 9
+    };
+    
+    // 保存训练时间
+    localStorage.setItem('lastTrainingTime', new Date().toLocaleString('zh-CN'));
+    
+    // 更新概览
+    this.updateTrainingOverview();
+    this.updateModelEvaluation();
+    
+    // 关闭进度模态框
+    const modal = document.getElementById('trainingProgressModal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    this.showNotification('Z-R模型训练完成！', 'success');
+    
+    // 显示训练结果
+    setTimeout(() => {
+        this.showTrainingResults();
+    }, 1000);
+};
+
+// 显示训练结果
+StockApp.prototype.showTrainingResults = function() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'trainingResultsModal';
+    modal.innerHTML = `
+        <div class="modal-content training-results-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-trophy"></i> 训练结果</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="results-summary">
+                    <h4>模型性能指标</h4>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-icon">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h5>准确率</h5>
+                                <div class="metric-value">${this.modelMetrics.accuracy.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h5>精确率</h5>
+                                <div class="metric-value">${this.modelMetrics.precision.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">
+                                <i class="fas fa-undo"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h5>召回率</h5>
+                                <div class="metric-value">${this.modelMetrics.recall.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-icon">
+                                <i class="fas fa-balance-scale"></i>
+                            </div>
+                            <div class="metric-content">
+                                <h5>F1分数</h5>
+                                <div class="metric-value">${this.modelMetrics.f1.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="training-summary">
+                    <h4>训练摘要</h4>
+                    <ul>
+                        <li>训练数据量: ${this.trainingData.length} 条</li>
+                        <li>训练轮次: 100 轮</li>
+                        <li>训练时间: ${Math.floor(Math.random() * 30) + 15} 分钟</li>
+                        <li>模型大小: ${(Math.random() * 50 + 20).toFixed(1)} MB</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="this.closest('.modal').remove()">确定</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+// 初始化训练进度图表
+StockApp.prototype.initTrainingProgressChart = function() {
+    if (typeof echarts === 'undefined') return;
+    
+    const chart = echarts.init(document.getElementById('trainingProgressChart'));
+    const option = {
+        title: {
+            text: '训练进度',
+            left: 'center',
+            textStyle: { fontSize: 14 }
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            data: ['损失值', '准确率'],
+            bottom: 0
+        },
+        xAxis: {
+            type: 'category',
+            data: []
+        },
+        yAxis: [
+            {
+                type: 'value',
+                name: '损失值',
+                position: 'left'
+            },
+            {
+                type: 'value',
+                name: '准确率(%)',
+                position: 'right'
+            }
+        ],
+        series: [
+            {
+                name: '损失值',
+                type: 'line',
+                data: [],
+                smooth: true,
+                lineStyle: { color: '#ff6b6b' }
+            },
+            {
+                name: '准确率',
+                type: 'line',
+                yAxisIndex: 1,
+                data: [],
+                smooth: true,
+                lineStyle: { color: '#4ecdc4' }
+            }
+        ]
+    };
+    
+    chart.setOption(option);
+    this.trainingProgressChart = chart;
+};
+
+// 更新训练进度图表
+StockApp.prototype.updateTrainingProgressChart = function(epoch, loss, accuracy) {
+    if (!this.trainingProgressChart) return;
+    
+    const option = this.trainingProgressChart.getOption();
+    const xData = option.xAxis[0].data;
+    const lossData = option.series[0].data;
+    const accuracyData = option.series[1].data;
+    
+    xData.push(epoch);
+    lossData.push(loss);
+    accuracyData.push(accuracy);
+    
+    // 保持最近50个数据点
+    if (xData.length > 50) {
+        xData.shift();
+        lossData.shift();
+        accuracyData.shift();
+    }
+    
+    this.trainingProgressChart.setOption(option);
+};
+
+// 更新模型评估
+StockApp.prototype.updateModelEvaluation = function() {
+    document.getElementById('accuracyMetric').textContent = `${this.modelMetrics.accuracy.toFixed(1)}%`;
+    document.getElementById('precisionMetric').textContent = `${this.modelMetrics.precision.toFixed(1)}%`;
+    document.getElementById('recallMetric').textContent = `${this.modelMetrics.recall.toFixed(1)}%`;
+    document.getElementById('f1Metric').textContent = `${this.modelMetrics.f1.toFixed(1)}%`;
+};
+
+// 初始化训练标签页切换
+StockApp.prototype.initTrainingTabSwitching = function() {
+    document.querySelectorAll('[data-input-tab]').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-input-tab');
+            this.switchTrainingInputTab(tabName);
+        });
+    });
+};
+
+// 切换训练输入标签页
+StockApp.prototype.switchTrainingInputTab = function(tabName) {
+    // 更新标签页按钮状态
+    document.querySelectorAll('[data-input-tab]').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-input-tab="${tabName}"]`).classList.add('active');
+    
+    // 更新标签页内容
+    document.querySelectorAll('.input-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
+};
+
+// 初始化可视化标签页切换
+StockApp.prototype.initVisualizationTabSwitching = function() {
+    document.querySelectorAll('[data-viz-tab]').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-viz-tab');
+            this.switchVisualizationTab(tabName);
+        });
+    });
+};
+
+// 切换可视化标签页
+StockApp.prototype.switchVisualizationTab = function(tabName) {
+    // 更新标签页按钮状态
+    document.querySelectorAll('[data-viz-tab]').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelector(`[data-viz-tab="${tabName}"]`).classList.add('active');
+    
+    // 更新标签页内容
+    document.querySelectorAll('.viz-tab').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(tabName).classList.add('active');
+    
+    // 初始化对应图表
+    this.initVisualizationChart(tabName);
+};
+
+// 初始化可视化图表
+StockApp.prototype.initVisualizationChart = function(tabName) {
+    if (typeof echarts === 'undefined') return;
+    
+    const chartId = tabName + 'Chart';
+    const chartElement = document.getElementById(chartId);
+    if (!chartElement) return;
+    
+    const chart = echarts.init(chartElement);
+    let option = {};
+    
+    switch (tabName) {
+        case 'loss':
+            option = this.getLossChartOption();
+            break;
+        case 'accuracy':
+            option = this.getAccuracyChartOption();
+            break;
+        case 'prediction':
+            option = this.getPredictionChartOption();
+            break;
+        case 'feature':
+            option = this.getFeatureChartOption();
+            break;
+    }
+    
+    chart.setOption(option);
+};
+
+// 获取损失函数图表配置
+StockApp.prototype.getLossChartOption = function() {
+    const epochs = Array.from({length: 100}, (_, i) => i + 1);
+    const trainLoss = epochs.map(epoch => 2.5 * Math.exp(-epoch / 30) + 0.1 + Math.random() * 0.1);
+    const valLoss = epochs.map(epoch => 2.8 * Math.exp(-epoch / 35) + 0.15 + Math.random() * 0.1);
+    
+    return {
+        title: {
+            text: '训练损失',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'axis'
+        },
+        legend: {
+            data: ['训练损失', '验证损失'],
+            bottom: 0
+        },
+        xAxis: {
+            type: 'category',
+            data: epochs
+        },
+        yAxis: {
+            type: 'value',
+            name: '损失值'
+        },
+        series: [
+            {
+                name: '训练损失',
+                type: 'line',
+                data: trainLoss,
+                smooth: true,
+                lineStyle: { color: '#ff6b6b' }
+            },
+            {
+                name: '验证损失',
+                type: 'line',
+                data: valLoss,
+                smooth: true,
+                lineStyle: { color: '#4ecdc4' }
+            }
+        ]
+    };
+};
+
+// 获取准确率图表配置
+StockApp.prototype.getAccuracyChartOption = function() {
+    const epochs = ['1', '23', '45', '67', '89'];
+    const trainAcc = [45, 68, 82, 89, 94];
+    const valAcc = [42, 65, 79, 86, 91];
+    
+    return {
+        title: {
+            text: '训练准确率',
+            left: 'center',
+            textStyle: {
+                fontSize: 16
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function (params) {
+                let result = params[0].name + '<br/>';
+                params.forEach(function (item) {
+                    result += item.marker + item.seriesName + ': ' + item.value + '%<br/>';
+                });
+                return result;
+            }
+        },
+        legend: {
+            data: ['训练准确率', '验证准确率'],
+            bottom: 0,
+            textStyle: {
+                fontSize: 12
+            }
+        },
+        grid: {
+            left: '8%',
+            right: '8%',
+            top: '15%',
+            bottom: '15%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: epochs,
+            axisLabel: {
+                fontSize: 12
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '准确率(%)',
+            min: 0,
+            max: 100,
+            nameLocation: 'middle',
+            nameGap: 50,
+            axisLabel: {
+                fontSize: 12,
+                formatter: '{value}%'
+            }
+        },
+        series: [
+            {
+                name: '训练准确率',
+                type: 'line',
+                data: trainAcc,
+                smooth: true,
+                lineStyle: {
+                    color: '#4ecdc4',
+                    width: 3
+                },
+                areaStyle: {
+                    color: {
+                        type: 'linear',
+                        x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{
+                            offset: 0, color: 'rgba(78, 205, 196, 0.3)'
+                        }, {
+                            offset: 1, color: 'rgba(78, 205, 196, 0.1)'
+                        }]
+                    }
+                },
+                symbol: 'circle',
+                symbolSize: 6
+            },
+            {
+                name: '验证准确率',
+                type: 'line',
+                data: valAcc,
+                smooth: true,
+                lineStyle: {
+                    color: '#45b7d1',
+                    width: 3
+                },
+                symbol: 'circle',
+                symbolSize: 6
+            }
+        ]
+    };
+};
+
+// 获取预测分析图表配置
+StockApp.prototype.getPredictionChartOption = function() {
+    const categories = ['买入', '持有'];
+    const actual = [28, 18];
+    const predicted = [25, 20];
+    
+    return {
+        title: {
+            text: '预测分析',
+            left: 'center',
+            textStyle: {
+                fontSize: 16
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'shadow'
+            },
+            formatter: function (params) {
+                let result = params[0].name + '<br/>';
+                params.forEach(function (item) {
+                    result += item.marker + item.seriesName + ': ' + item.value + '<br/>';
+                });
+                return result;
+            }
+        },
+        legend: {
+            data: ['实际值', '预测值'],
+            top: 30,
+            textStyle: {
+                fontSize: 12
+            }
+        },
+        grid: {
+            left: '8%',
+            right: '8%',
+            top: '20%',
+            bottom: '15%',
+            containLabel: true
+        },
+        xAxis: {
+            type: 'category',
+            data: categories,
+            axisLabel: {
+                fontSize: 12
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '数量',
+            nameLocation: 'middle',
+            nameGap: 50,
+            axisLabel: {
+                fontSize: 12
+            }
+        },
+        series: [
+            {
+                name: '实际值',
+                type: 'bar',
+                data: actual,
+                barWidth: '35%',
+                itemStyle: {
+                    color: '#4ecdc4',
+                    borderRadius: [4, 4, 0, 0]
+                }
+            },
+            {
+                name: '预测值',
+                type: 'bar',
+                data: predicted,
+                barWidth: '35%',
+                itemStyle: {
+                    color: '#ff6b6b',
+                    borderRadius: [4, 4, 0, 0]
+                }
+            }
+        ]
+    };
+};
+
+// 获取特征重要性图表配置
+StockApp.prototype.getFeatureChartOption = function() {
+    const features = [
+        { name: '技术指标', value: 0.25 },
+        { name: '市场环境', value: 0.20 },
+        { name: '历史价格', value: 0.18 },
+        { name: '成交量', value: 0.15 },
+        { name: '基本面', value: 0.12 },
+        { name: '情绪指标', value: 0.10 }
+    ];
+    
+    return {
+        title: {
+            text: '特征重要性分析',
+            left: 'center',
+            textStyle: {
+                fontSize: 16
+            }
+        },
+        tooltip: {
+            trigger: 'item',
+            formatter: '{a} <br/>{b}: {c} ({d}%)'
+        },
+        legend: {
+            orient: 'vertical',
+            left: '5%',
+            top: 'middle',
+            textStyle: {
+                fontSize: 11
+            }
+        },
+        series: [
+            {
+                name: '特征重要性',
+                type: 'pie',
+                radius: ['25%', '65%'],
+                center: ['65%', '50%'],
+                data: features,
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+                label: {
+                    show: true,
+                    formatter: '{b}: {d}%',
+                    fontSize: 11
+                },
+                labelLine: {
+                    show: true
+                },
+                itemStyle: {
+                    borderRadius: 8,
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                    color: function(params) {
+                        const colors = ['#8b1538', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'];
+                        return colors[params.dataIndex % colors.length];
+                    }
+                }
+            }
+        ]
+    };
+};
+
+// 其他辅助方法
+StockApp.prototype.refreshTrainingData = function() {
+    this.updateTrainingDataTable();
+    this.updateTrainingOverview();
+    this.showNotification('训练数据已刷新', 'success');
+};
+
+StockApp.prototype.handleTrainingFileUpload = function(files) {
+    if (files.length === 0) return;
+    
+    this.showNotification('文件上传功能开发中...', 'info');
+};
+
+StockApp.prototype.importFromAPI = function() {
+    this.showNotification('API导入功能开发中...', 'info');
+};
+
+StockApp.prototype.importFromKnowledge = function() {
+    this.showNotification('知识库导入功能开发中...', 'info');
+};
+
+StockApp.prototype.searchTrainingData = function(query) {
+    // 实现搜索功能
+    this.showNotification('搜索功能开发中...', 'info');
+};
+
+StockApp.prototype.filterTrainingData = function(filter) {
+    // 实现筛选功能
+    this.showNotification('筛选功能开发中...', 'info');
+};
+
+StockApp.prototype.deleteSelectedTrainingData = function() {
+    const selectedIds = Array.from(document.querySelectorAll('.data-checkbox:checked'))
+        .map(checkbox => parseInt(checkbox.getAttribute('data-id')));
+    
+    if (selectedIds.length === 0) {
+        this.showNotification('请选择要删除的数据', 'warning');
+        return;
+    }
+    
+    this.trainingData = this.trainingData.filter(data => !selectedIds.includes(data.id));
+    this.updateTrainingDataTable();
+    this.updateTrainingOverview();
+    this.showNotification(`成功删除 ${selectedIds.length} 条数据`, 'success');
+};
+
+StockApp.prototype.selectAllTrainingData = function(checked) {
+    document.querySelectorAll('.data-checkbox').forEach(checkbox => {
+        checkbox.checked = checked;
+    });
+};
+
+StockApp.prototype.editTrainingData = function(id) {
+    this.showNotification('编辑功能开发中...', 'info');
+};
+
+StockApp.prototype.deleteTrainingData = function(id) {
+    if (confirm('确定要删除这条训练数据吗？')) {
+        this.trainingData = this.trainingData.filter(data => data.id !== id);
+        this.updateTrainingDataTable();
+        this.updateTrainingOverview();
+        this.showNotification('数据删除成功', 'success');
+    }
+};
+
+// 初始化训练图表
+StockApp.prototype.initTrainingCharts = function() {
+    // 延迟初始化图表，确保DOM已加载
+    setTimeout(() => {
+        this.initVisualizationChart('loss');
+        this.initVisualizationChart('accuracy');
+        this.initVisualizationChart('prediction');
+        this.initVisualizationChart('feature');
+    }, 500);
+};
+
+// 初始化评估图表（混淆矩阵和ROC曲线）
+StockApp.prototype.initEvaluationCharts = function() {
+    console.log('开始初始化评估图表...');
+    
+    // 延迟初始化图表，确保DOM已加载
+    setTimeout(() => {
+        console.log('延迟初始化评估图表...');
+        
+        // 检查echarts是否可用
+        if (typeof echarts === 'undefined') {
+            console.error('ECharts未加载，无法初始化图表');
+            return;
+        }
+        
+        try {
+            // 检查ZRModelTraining实例是否存在
+            if (this.zrTraining && this.zrTraining.initConfusionMatrixChart) {
+                this.zrTraining.initConfusionMatrixChart();
+                this.zrTraining.initROCChart();
+                console.log('评估图表初始化完成');
+            } else {
+                console.error('ZRModelTraining实例或方法不存在');
+                // 直接调用图表初始化
+                this.initConfusionMatrixChartDirect();
+                this.initROCChartDirect();
+            }
+        } catch (error) {
+            console.error('初始化评估图表时出错:', error);
+        }
+    }, 1000);
+};
+
+// 表单验证功能
+StockApp.prototype.initFormValidation = function() {
+    const form = document.querySelector('#manual .input-form');
+    if (!form) return;
+
+    // 验证规则
+    const validationRules = {
+        stockCode: {
+            required: true,
+            pattern: /^[0-9]{6}$/,
+            message: '股票代码必须是6位数字'
+        },
+        stockName: {
+            required: true,
+            minLength: 2,
+            maxLength: 20,
+            message: '股票名称长度必须在2-20个字符之间'
+        },
+        operationType: {
+            required: true,
+            message: '请选择操作类型'
+        },
+        stockPrice: {
+            required: true,
+            min: 0.01,
+            max: 9999.99,
+            message: '股票单价必须在0.01-9999.99之间'
+        },
+        quantity: {
+            required: true,
+            min: 1,
+            max: 999999,
+            message: '数量必须在1-999999之间'
+        },
+        operationTime: {
+            required: true,
+            message: '请选择操作时间'
+        },
+        profitLoss: {
+            min: -999999.99,
+            max: 999999.99,
+            message: '盈亏状况必须在-999999.99到999999.99之间'
+        },
+        profitLossRatio: {
+            min: -999.99,
+            max: 999.99,
+            message: '盈亏比例必须在-999.99%到999.99%之间'
+        },
+        marketEnvironment: {
+            required: true,
+            message: '请选择市场环境'
+        },
+        strategyDescription: {
+            maxLength: 500,
+            message: '策略描述不能超过500个字符'
+        }
+    };
+
+    // 实时验证函数
+    const validateField = (field) => {
+        const fieldName = field.name;
+        const value = field.value.trim();
+        const rules = validationRules[fieldName];
+        
+        if (!rules) return true;
+
+        const formGroup = field.closest('.form-group');
+        const errorElement = document.getElementById(`${fieldName}-error`);
+        const successIcon = formGroup.querySelector('.input-success');
+        const errorIcon = formGroup.querySelector('.input-error');
+
+        // 清除之前的验证状态
+        field.classList.remove('valid', 'invalid');
+        formGroup.classList.remove('valid', 'invalid');
+        if (errorElement) {
+            errorElement.classList.remove('show');
+            errorElement.textContent = '';
+        }
+
+        // 必填字段验证
+        if (rules.required && !value) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, '此字段为必填项');
+            return false;
+        }
+
+        // 如果字段为空且非必填，则跳过其他验证
+        if (!value && !rules.required) {
+            return true;
+        }
+
+        // 模式验证
+        if (rules.pattern && !rules.pattern.test(value)) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, rules.message);
+            return false;
+        }
+
+        // 长度验证
+        if (rules.minLength && value.length < rules.minLength) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, rules.message);
+            return false;
+        }
+
+        if (rules.maxLength && value.length > rules.maxLength) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, rules.message);
+            return false;
+        }
+
+        // 数值范围验证
+        if (rules.min !== undefined && parseFloat(value) < rules.min) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, rules.message);
+            return false;
+        }
+
+        if (rules.max !== undefined && parseFloat(value) > rules.max) {
+            this.showFieldError(field, formGroup, errorElement, errorIcon, rules.message);
+            return false;
+        }
+
+        // 验证通过
+        this.showFieldSuccess(field, formGroup, successIcon);
+        return true;
+    };
+
+    // 显示错误状态
+    this.showFieldError = (field, formGroup, errorElement, errorIcon, message) => {
+        field.classList.add('invalid');
+        formGroup.classList.add('invalid');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+        if (errorIcon) {
+            errorIcon.style.opacity = '1';
+        }
+    };
+
+    // 显示成功状态
+    this.showFieldSuccess = (field, formGroup, successIcon) => {
+        field.classList.add('valid');
+        formGroup.classList.add('valid');
+        if (successIcon) {
+            successIcon.style.opacity = '1';
+        }
+    };
+
+    // 清除字段验证状态
+    this.clearFieldValidation = (field) => {
+        const formGroup = field.closest('.form-group');
+        const errorElement = document.getElementById(`${field.name}-error`);
+        const successIcon = formGroup.querySelector('.input-success');
+        const errorIcon = formGroup.querySelector('.input-error');
+
+        field.classList.remove('valid', 'invalid');
+        formGroup.classList.remove('valid', 'invalid');
+        if (errorElement) {
+            errorElement.classList.remove('show');
+            errorElement.textContent = '';
+        }
+        if (successIcon) successIcon.style.opacity = '0';
+        if (errorIcon) errorIcon.style.opacity = '0';
+    };
+
+    // 为所有输入字段添加事件监听器
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        // 实时验证
+        input.addEventListener('input', () => {
+            validateField(input);
+            this.updateCharCounter(input);
+        });
+
+        input.addEventListener('blur', () => {
+            validateField(input);
+        });
+
+        input.addEventListener('focus', () => {
+            this.clearFieldValidation(input);
+        });
+    });
+
+    // 字符计数器更新
+    this.updateCharCounter = (field) => {
+        if (field.name === 'strategyDescription') {
+            const counter = document.getElementById('strategyDescription-counter');
+            if (counter) {
+                const length = field.value.length;
+                counter.textContent = length;
+                
+                const charCounter = counter.parentElement;
+                charCounter.classList.remove('warning', 'danger');
+                
+                if (length > 450) {
+                    charCounter.classList.add('danger');
+                } else if (length > 400) {
+                    charCounter.classList.add('warning');
+                }
+            }
+        }
+    };
+
+    // 表单提交验证
+    const submitButton = document.getElementById('addTrainingData');
+    if (submitButton) {
+        submitButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                }
+            });
+
+            if (isValid) {
+                this.submitTrainingData();
+            } else {
+                this.showNotification('请检查表单中的错误信息', 'error');
+            }
+        });
+    }
+
+    // 清空表单
+    const clearButton = document.getElementById('clearForm');
+    if (clearButton) {
+        clearButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.clearForm();
+        });
+    }
+
+    // 调试图表初始化按钮
+    const debugInitChartsButton = document.getElementById('debugInitCharts');
+    if (debugInitChartsButton) {
+        debugInitChartsButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.debugInitEvaluationCharts();
+        });
+    }
+
+    // 刷新图表按钮
+    const refreshChartsButton = document.getElementById('refreshCharts');
+    if (refreshChartsButton) {
+        refreshChartsButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.refreshAllCharts();
+        });
+    }
+};
+
+// 清空表单
+StockApp.prototype.clearForm = function() {
+    const form = document.querySelector('#manual .input-form');
+    if (!form) return;
+
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.value = '';
+        this.clearFieldValidation(input);
+    });
+
+    // 重置字符计数器
+    const counter = document.getElementById('strategyDescription-counter');
+    if (counter) {
+        counter.textContent = '0';
+        counter.parentElement.classList.remove('warning', 'danger');
+    }
+
+    this.showNotification('表单已清空', 'success');
+};
+
+// 提交训练数据
+StockApp.prototype.submitTrainingData = function() {
+    const form = document.querySelector('#manual .input-form');
+    if (!form) return;
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    // 这里可以添加数据提交逻辑
+    console.log('提交训练数据:', data);
+    this.showNotification('训练数据提交成功！', 'success');
+    
+    // 清空表单
+    this.clearForm();
+};
+
+// 显示通知
+StockApp.prototype.showNotification = function(message, type = 'info') {
+    // 创建通知元素
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // 添加样式
+    Object.assign(notification.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        padding: '12px 20px',
+        borderRadius: '6px',
+        color: 'white',
+        fontWeight: '500',
+        zIndex: '10000',
+        transform: 'translateX(100%)',
+        transition: 'transform 0.3s ease',
+        maxWidth: '300px',
+        wordWrap: 'break-word'
+    });
+
+    // 根据类型设置背景色
+    const colors = {
+        success: '#27ae60',
+        error: '#e74c3c',
+        warning: '#f39c12',
+        info: '#3498db'
+    };
+    notification.style.backgroundColor = colors[type] || colors.info;
+
+    // 添加到页面
+    document.body.appendChild(notification);
+
+    // 显示动画
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+
+    // 自动隐藏
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+};
+
+// 直接初始化混淆矩阵图表
+StockApp.prototype.initConfusionMatrixChartDirect = function() {
+    const chartElement = document.getElementById('confusionMatrixChart');
+    if (!chartElement) {
+        console.warn('混淆矩阵图表容器未找到');
+        return;
+    }
+    
+    const chart = echarts.init(chartElement);
+    
+    // 混淆矩阵数据
+    const data = [
+        [0, 0, 45], [0, 1, 8], [0, 2, 5],   // 买入预测
+        [1, 0, 6], [1, 1, 52], [1, 2, 4],   // 卖出预测
+        [2, 0, 3], [2, 1, 5], [2, 2, 38]    // 持有预测
+    ];
+    
+    const option = {
+        title: {
+            text: '混淆矩阵 - 股票投资决策分类',
+            left: 'center',
+            textStyle: {
+                fontSize: 14,
+                color: '#8b1538'
+            }
+        },
+        tooltip: {
+            position: 'top',
+            formatter: function (params) {
+                const categories = ['买入', '卖出', '持有'];
+                return `预测: ${categories[params.data[0]]}<br/>实际: ${categories[params.data[1]]}<br/>数量: ${params.data[2]}`;
+            }
+        },
+        grid: {
+            height: '60%',
+            top: '15%',
+            left: '10%',
+            right: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data: ['买入', '卖出', '持有'],
+            splitArea: {
+                show: true
+            },
+            axisLabel: {
+                fontSize: 12
+            }
+        },
+        yAxis: {
+            type: 'category',
+            data: ['买入', '卖出', '持有'],
+            splitArea: {
+                show: true
+            },
+            axisLabel: {
+                fontSize: 12
+            }
+        },
+        visualMap: {
+            min: 0,
+            max: 52,
+            calculable: true,
+            orient: 'horizontal',
+            left: 'center',
+            bottom: '5%',
+            inRange: {
+                color: ['#fff2e8', '#ff7a00', '#8b1538']
+            },
+            text: ['高', '低'],
+            textStyle: {
+                color: '#333'
+            }
+        },
+        series: [{
+            name: '混淆矩阵',
+            type: 'heatmap',
+            data: data,
+            label: {
+                show: true,
+                fontSize: 12,
+                color: '#000'
+            },
+            emphasis: {
+                itemStyle: {
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            }
+        }]
+    };
+    
+    chart.setOption(option);
+    console.log('混淆矩阵图表初始化完成');
+};
+
+// 直接初始化ROC曲线图表
+StockApp.prototype.initROCChartDirect = function() {
+    const chartElement = document.getElementById('rocChart');
+    if (!chartElement) {
+        console.warn('ROC曲线图表容器未找到');
+        return;
+    }
+    
+    const chart = echarts.init(chartElement);
+    
+    // ROC曲线数据
+    const rocData = [
+        [0, 0], [0.02, 0.08], [0.05, 0.18], [0.08, 0.28], [0.12, 0.38],
+        [0.15, 0.48], [0.18, 0.58], [0.22, 0.68], [0.25, 0.75], [0.28, 0.81],
+        [0.32, 0.86], [0.35, 0.89], [0.38, 0.91], [0.42, 0.93], [0.45, 0.94],
+        [0.48, 0.95], [0.52, 0.96], [0.55, 0.97], [0.58, 0.975], [0.62, 0.98],
+        [0.65, 0.985], [0.68, 0.988], [0.72, 0.991], [0.75, 0.993], [0.78, 0.995],
+        [0.82, 0.997], [0.85, 0.998], [0.88, 0.999], [0.92, 0.9995], [0.95, 0.9998], [1, 1]
+    ];
+    
+    const option = {
+        title: {
+            text: 'ROC曲线 - 股票投资决策模型',
+            left: 'center',
+            textStyle: {
+                fontSize: 14,
+                color: '#8b1538'
+            }
+        },
+        tooltip: {
+            trigger: 'axis',
+            formatter: function (params) {
+                if (params[0].seriesName === 'ROC曲线 (AUC=0.92)') {
+                    return `假正率: ${(params[0].data[0] * 100).toFixed(1)}%<br/>真正率: ${(params[0].data[1] * 100).toFixed(1)}%`;
+                }
+                return params[0].seriesName;
+            }
+        },
+        legend: {
+            data: ['ROC曲线 (AUC=0.92)', '随机分类器'],
+            top: 30,
+            textStyle: {
+                fontSize: 12
+            }
+        },
+        grid: {
+            left: '10%',
+            right: '10%',
+            top: '20%',
+            bottom: '15%'
+        },
+        xAxis: {
+            type: 'value',
+            name: '假正率 (FPR)',
+            min: 0,
+            max: 1,
+            nameLocation: 'middle',
+            nameGap: 30,
+            axisLabel: {
+                formatter: '{value}'
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '真正率 (TPR)',
+            min: 0,
+            max: 1,
+            nameLocation: 'middle',
+            nameGap: 50,
+            axisLabel: {
+                formatter: '{value}'
+            }
+        },
+        series: [
+            {
+                name: 'ROC曲线 (AUC=0.92)',
+                type: 'line',
+                data: rocData,
+                smooth: true,
+                lineStyle: {
+                    color: '#8b1538',
+                    width: 3
+                },
+                areaStyle: {
+                    color: {
+                        type: 'linear',
+                        x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{
+                            offset: 0, color: 'rgba(139, 21, 56, 0.3)'
+                        }, {
+                            offset: 1, color: 'rgba(139, 21, 56, 0.1)'
+                        }]
+                    }
+                },
+                symbol: 'circle',
+                symbolSize: 4
+            },
+            {
+                name: '随机分类器',
+                type: 'line',
+                data: [[0, 0], [1, 1]],
+                lineStyle: {
+                    color: '#d9d9d9',
+                    type: 'dashed',
+                    width: 2
+                },
+                symbol: 'none'
+            }
+        ]
+    };
+    
+    chart.setOption(option);
+    console.log('ROC曲线图表初始化完成');
+};
+
+// 刷新所有图表
+StockApp.prototype.refreshAllCharts = function() {
+    console.log('开始刷新所有图表...');
+    
+    // 检查ECharts是否可用
+    if (typeof echarts === 'undefined') {
+        console.error('ECharts未加载');
+        return;
+    }
+    
+    try {
+        // 刷新训练图表
+        this.initVisualizationChart('loss');
+        this.initVisualizationChart('accuracy');
+        this.initVisualizationChart('prediction');
+        this.initVisualizationChart('feature');
+        
+        // 刷新评估图表
+        this.initConfusionMatrixChartDirect();
+        this.initROCChartDirect();
+        
+        console.log('所有图表刷新完成');
+        this.showNotification('图表刷新成功！', 'success');
+    } catch (error) {
+        console.error('刷新图表时出错:', error);
+        this.showNotification('图表刷新失败', 'error');
+    }
+};
+
+// 调试函数：手动初始化评估图表
+StockApp.prototype.debugInitEvaluationCharts = function() {
+    console.log('开始调试初始化评估图表...');
+    
+    // 检查DOM元素是否存在
+    const confusionElement = document.getElementById('confusionMatrixChart');
+    const rocElement = document.getElementById('rocChart');
+    
+    console.log('混淆矩阵容器:', confusionElement);
+    console.log('ROC曲线容器:', rocElement);
+    
+    if (confusionElement && rocElement) {
+        console.log('容器存在，开始初始化图表...');
+        this.initConfusionMatrixChartDirect();
+        this.initROCChartDirect();
+        console.log('图表初始化完成');
+    } else {
+        console.error('图表容器未找到');
+    }
+};

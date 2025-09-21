@@ -1501,13 +1501,19 @@ class ZRAGApp {
         document.querySelectorAll('[data-knowledge-tab]').forEach(tab => {
             tab.classList.remove('active');
         });
-        document.querySelector(`[data-knowledge-tab="${tabName}"]`).classList.add('active');
+        const knowledgeTab = document.querySelector(`[data-knowledge-tab="${tabName}"]`);
+        if (knowledgeTab) {
+            knowledgeTab.classList.add('active');
+        }
 
         // 更新内容区域
         document.querySelectorAll('.knowledge-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        document.getElementById(tabName).classList.add('active');
+        const knowledgeContent = document.getElementById(tabName);
+        if (knowledgeContent) {
+            knowledgeContent.classList.add('active');
+        }
 
         this.currentKnowledgeTab = tabName;
         this.loadKnowledgeTabContent();

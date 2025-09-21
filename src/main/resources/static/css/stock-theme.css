@@ -2326,6 +2326,669 @@
     line-height: 1.5;
 }
 
+/* Z-R模型训练页面样式 */
+.training-overview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.stat-content h4 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-content p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+/* 数据录入区域 */
+.data-input-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.section-header h4 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.input-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #e2e8f0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.tab-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.tab-btn:hover:not(.active) {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.input-tab-content {
+    display: none;
+}
+
+.input-tab-content.active {
+    display: block;
+}
+
+.input-form {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-input, .form-select {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* 上传区域 */
+.upload-area {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f8fafc;
+}
+
+.upload-area:hover {
+    border-color: #667eea;
+    background: #f1f5ff;
+}
+
+.upload-content i {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.upload-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+}
+
+.upload-content p {
+    margin: 0 0 1.5rem 0;
+    color: #64748b;
+}
+
+.upload-tips {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.upload-tips h5 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+}
+
+.upload-tips ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #64748b;
+}
+
+.upload-tips li {
+    margin-bottom: 0.5rem;
+}
+
+/* 导入选项 */
+.import-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.import-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.import-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+}
+
+.import-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.import-card h5 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+}
+
+.import-card p {
+    margin: 0 0 1.5rem 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* 训练数据管理 */
+.training-data-management {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.data-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.data-controls .form-input {
+    min-width: 200px;
+}
+
+.data-table-container {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.data-table th {
+    background: #f8fafc;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.data-table tr:hover {
+    background: #f8fafc;
+}
+
+.operation-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.operation-badge.buy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.operation-badge.sell {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.operation-badge.hold {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.environment-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.environment-badge.bull {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.environment-badge.bear {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.environment-badge.sideways {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.positive {
+    color: #059669;
+    font-weight: 600;
+}
+
+.negative {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    background: #f1f5f9;
+    color: #374151;
+}
+
+.btn-icon:first-child:hover {
+    color: #667eea;
+}
+
+.btn-icon:last-child:hover {
+    color: #dc2626;
+}
+
+/* 训练配置 */
+.training-config {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.config-group label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 训练可视化 */
+.training-visualization {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.visualization-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.visualization-content {
+    margin-top: 1.5rem;
+}
+
+.viz-tab {
+    display: none;
+}
+
+.viz-tab.active {
+    display: block;
+}
+
+/* 模型评估 */
+.model-evaluation {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.evaluation-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: white;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.metric-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.metric-content h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.evaluation-charts {
+    margin-top: 2rem;
+}
+
+.chart-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.chart-item {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.chart-item h5 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+    text-align: center;
+}
+
+/* 训练进度模态框 */
+.training-progress-modal {
+    max-width: 600px;
+}
+
+.training-progress-container {
+    padding: 1rem 0;
+}
+
+.progress-info {
+    margin-bottom: 2rem;
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.progress-bar-container {
+    background: #e2e8f0;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.training-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.metric-item {
+    text-align: center;
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.training-chart-container {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+/* 训练结果模态框 */
+.training-results-modal {
+    max-width: 800px;
+}
+
+.results-summary {
+    margin-bottom: 2rem;
+}
+
+.results-summary h4 {
+    margin: 0 0 1.5rem 0;
+    color: #1e293b;
+    text-align: center;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.training-summary {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.training-summary h4 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+}
+
+.training-summary ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #64748b;
+}
+
+.training-summary li {
+    margin-bottom: 0.5rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .legal-modal {
@@ -2406,6 +3069,242 @@
 
     .stock-theme .stock-sidebar .sidebar-close {
         display: block;
+    }
+}
+
+/* Tooltip 样式 */
+.tooltip-label {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: help;
+}
+
+.tooltip-icon {
+    color: #8b1538;
+    font-size: 0.9em;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.tooltip-label:hover .tooltip-icon {
+    opacity: 1;
+}
+
+.tooltip-label::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #8b1538 0%, #a91e3a 100%);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: nowrap;
+    max-width: 300px;
+    white-space: normal;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(139, 21, 56, 0.3);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.tooltip-label::before {
+    content: '';
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #8b1538;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.tooltip-label:hover::after,
+.tooltip-label:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .tooltip-label::after {
+        max-width: 250px;
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+}
+
+/* 表单验证样式 */
+.form-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.required {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper .form-input,
+.input-wrapper .form-select {
+    padding-right: 2.5rem;
+    transition: all 0.3s ease;
+}
+
+.input-wrapper .form-input:focus,
+.input-wrapper .form-select:focus {
+    border-color: #8b1538;
+    box-shadow: 0 0 0 3px rgba(139, 21, 56, 0.1);
+    outline: none;
+}
+
+.input-success,
+.input-error {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.input-success {
+    color: #27ae60;
+}
+
+.input-error {
+    color: #e74c3c;
+}
+
+/* 输入框状态样式 */
+.form-input.valid,
+.form-select.valid {
+    border-color: #27ae60;
+    background-color: rgba(39, 174, 96, 0.05);
+}
+
+.form-input.valid + .input-success,
+.form-select.valid + .input-success {
+    opacity: 1;
+}
+
+.form-input.invalid,
+.form-select.invalid {
+    border-color: #e74c3c;
+    background-color: rgba(231, 76, 60, 0.05);
+}
+
+.form-input.invalid + .input-error,
+.form-select.invalid + .input-error {
+    opacity: 1;
+}
+
+/* 错误消息样式 */
+.error-message {
+    color: #e74c3c;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    min-height: 1.25rem;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.error-message.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 字符计数器样式 */
+.char-counter {
+    text-align: right;
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    min-height: 1rem;
+}
+
+.char-counter.warning {
+    color: #f39c12;
+}
+
+.char-counter.danger {
+    color: #e74c3c;
+}
+
+/* 表单组聚焦效果 */
+.form-group:focus-within .form-label {
+    color: #8b1538;
+    font-weight: 600;
+}
+
+/* 输入框动画效果 */
+.form-input,
+.form-select {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-input:hover:not(:focus):not(.invalid),
+.form-select:hover:not(:focus):not(.invalid) {
+    border-color: #8b1538;
+    box-shadow: 0 2px 4px rgba(139, 21, 56, 0.1);
+}
+
+/* 必填字段标签样式 */
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #2c3e50;
+    transition: color 0.3s ease;
+}
+
+/* 表单验证成功状态 */
+.form-group.valid .form-label {
+    color: #27ae60;
+}
+
+.form-group.invalid .form-label {
+    color: #e74c3c;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .input-wrapper .form-input,
+    .input-wrapper .form-select {
+        padding-right: 2rem;
+    }
+    
+    .input-success,
+    .input-error {
+        right: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .error-message {
+        font-size: 0.8rem;
     }
 }
 
